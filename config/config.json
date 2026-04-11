@@ -15,7 +15,7 @@
     "perUser": 10,
     "groupBurstLimit": 20,
     "groupBurstSeconds": 60
-  }
-  ,
-  "ownerJid": "+542604035392@s.whatsapp.net"
+  },
+  "ownerJid": "+542604035392@s.whatsapp.net",
+  "authMethod": "qr"
 }

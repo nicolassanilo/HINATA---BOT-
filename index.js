@@ -18,7 +18,7 @@ import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import path from 'path';
 import fs from 'fs/promises';
-import { fileURLToPath } from 'url';
+import readline from 'readline';
 import { Boom } from '@hapi/boom';
 import { initDB, db } from './db.js';
 
@@ -121,9 +121,18 @@ async function connectToWhatsApp() {
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log(`🤖 Usando WhatsApp v${version.join('.')} (isLatest: ${isLatest})`);
 
+    if (config.authMethod === 'qr') {
+        console.log('🔑 Método de autenticación: QR Code');
+    } else if (config.authMethod === 'phone') {
+        console.log('📱 Método de autenticación: Número de teléfono');
+    } else {
+        console.log('⚠️ Método de autenticación desconocido, usando QR por defecto');
+        config.authMethod = 'qr';
+    }
+
     const sock = makeWASocket({
         version,
-        printQRInTerminal: true,
+        printQRInTerminal: config.authMethod === 'qr',
         auth: {
             creds: state.creds,
             // Almacenamiento en caché para mejorar el rendimiento
@@ -137,6 +146,24 @@ async function connectToWhatsApp() {
             return { conversation: 'hello' };
         }
     });
+
+    // Si el método de autenticación es por teléfono, solicitar el código de vinculación
+    if (config.authMethod === 'phone') {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        rl.question('Ingresa el número de teléfono (con código de país, ej: 549123456789): ', async (phone) => {
+            rl.close();
+            try {
+                const code = await sock.requestPairingCode(phone);
+                console.log(`🔗 Código de vinculación: ${code}`);
+                console.log('Ingresa este código en WhatsApp para vincular el bot.');
+            } catch (error) {
+                console.error('❌ Error al solicitar el código de vinculación:', error);
+            }
+        });
+    }
 
     // ---- MANEJO DE EVENTOS DE CONEXIÓN ----
     sock.ev.on('connection.update', (update) => {
