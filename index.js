@@ -18,7 +18,6 @@ import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import path from 'path';
 import fs from 'fs/promises';
-import readline from 'readline';
 import { Boom } from '@hapi/boom';
 import { initDB, db } from './db.js';
 
@@ -149,20 +148,18 @@ async function connectToWhatsApp() {
 
     // Si el método de autenticación es por teléfono, solicitar el código de vinculación
     if (config.authMethod === 'phone') {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-        rl.question('Ingresa el número de teléfono (con código de país, ej: 549123456789): ', async (phone) => {
-            rl.close();
-            try {
-                const code = await sock.requestPairingCode(phone);
-                console.log(`🔗 Código de vinculación: ${code}`);
-                console.log('Ingresa este código en WhatsApp para vincular el bot.');
-            } catch (error) {
-                console.error('❌ Error al solicitar el código de vinculación:', error);
-            }
-        });
+        if (!config.phoneNumber) {
+            console.error('❌ Error: phoneNumber no está configurado en config.json');
+            process.exit(1);
+        }
+        try {
+            const code = await sock.requestPairingCode(config.phoneNumber);
+            console.log(`🔗 Código de vinculación: ${code}`);
+            console.log('Ingresa este código en WhatsApp para vincular el bot.');
+        } catch (error) {
+            console.error('❌ Error al solicitar el código de vinculación:', error);
+            process.exit(1);
+        }
     }
 
     // ---- MANEJO DE EVENTOS DE CONEXIÓN ----

@@ -17,5 +17,6 @@
     "groupBurstSeconds": 60
   },
   "ownerJid": "+542604035392@s.whatsapp.net",
-  "authMethod": "qr"
+  "authMethod": "qr",
+  "phoneNumber": "+549123456789"
 }
