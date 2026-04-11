@@ -19,6 +19,7 @@ import qrcode from 'qrcode-terminal';
 import path from 'path';
 import fs from 'fs/promises';
 import { Boom } from '@hapi/boom';
+import express from 'express';
 import { initDB, db } from './db.js';
 
 // Importa makeWASocket como default
@@ -349,3 +350,14 @@ async function connectToWhatsApp() {
 
 // Iniciar el bot
 connectToWhatsApp().catch(err => console.error("❌ Error fatal al iniciar el bot:", err));
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot HINATA está ejecutándose');
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Servidor web en puerto ${PORT}`);
+});
