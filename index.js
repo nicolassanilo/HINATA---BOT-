@@ -30,6 +30,7 @@ const __dirname = path.dirname(__filename);
 
 // Almacén global para los comandos cargados
 export let plugins = new Map();
+export let regexPlugins = [];
 // Almacén global para la configuración
 let config = {};
 
@@ -63,6 +64,7 @@ async function obtenerConfig() {
  */
 export async function cargarPlugins() {
     const newPlugins = new Map();
+    const newRegexPlugins = [];
     const errors = [];
 
     const pluginsDir = path.join(__dirname, 'plugins');
@@ -76,32 +78,56 @@ export async function cargarPlugins() {
             try {
                 // Usamos un timestamp para evitar problemas de caché con import()
                 const pluginPath = path.join(pluginsDir, file) + `?v=${Date.now()}`;
-                const plugin = await import(pluginPath);
+                const imported = await import(pluginPath);
+                const pluginDefinition = imported.default || imported;
+                const commands = pluginDefinition.command || pluginDefinition.commands || imported.command || imported.commands;
 
-                if (plugin.command) {
-                    const commands = Array.isArray(plugin.command) ? plugin.command : [plugin.command];
-                    commands.forEach(cmd => {
-                        // Asegura que el comando empiece con '.'
-                        const commandKey = cmd.startsWith('.') ? cmd : `.${cmd}`;
-                        if (newPlugins.has(commandKey)) {
-                            console.warn(`⚠️ ¡Comando duplicado! "${cmd}" en "${file}" será omitido.`);
-                        } else {
-                            // Guarda el módulo completo, no solo la función run
-                            newPlugins.set(commandKey, plugin);
-                        }
-                    });
+                if (!commands) {
+                    console.log(`⚠️ Plugin omitido: "${file}" no exporta un comando compatible.`);
+                    continue;
+                }
+
+                const pluginObj = typeof pluginDefinition === 'function'
+                    ? { ...pluginDefinition, run: pluginDefinition, command: pluginDefinition.command }
+                    : { ...pluginDefinition, run: pluginDefinition.run || pluginDefinition };
+
+                if (typeof pluginObj.run !== 'function') {
+                    console.log(`⚠️ Plugin omitido: "${file}" no tiene una función de ejecución válida.`);
+                    continue;
+                }
+
+                const commandList = Array.isArray(commands) ? commands : [commands];
+                for (const cmd of commandList) {
+                    if (cmd instanceof RegExp) {
+                        newRegexPlugins.push({ pattern: cmd, plugin: pluginObj, file });
+                        continue;
+                    }
+
+                    if (typeof cmd !== 'string') {
+                        console.log(`⚠️ Comando ignorado en "${file}": tipo de comando no soportado.`);
+                        continue;
+                    }
+
+                    const commandKey = cmd.startsWith('.') ? cmd : `.${cmd}`;
+                    if (newPlugins.has(commandKey)) {
+                        console.warn(`⚠️ ¡Comando duplicado! "${cmd}" en "${file}" será omitido.`);
+                        continue;
+                    }
+
+                    newPlugins.set(commandKey, pluginObj);
                 }
             } catch (err) {
                 console.error(`❌ Error al cargar el plugin "${file}":`, err);
                 errors.push({ file, error: err.message });
             }
         }
-        plugins = newPlugins; // Reemplaza los plugins antiguos con los nuevos
-        console.log(`✅ ${plugins.size} comandos cargados.`);
-        return { plugins, errors }; // Devuelve tanto los plugins como los errores
+        plugins = newPlugins;
+        regexPlugins = newRegexPlugins;
+        console.log(`✅ ${plugins.size} comandos cargados, ${regexPlugins.length} patrones regex registrados.`);
+        return { plugins, regexPlugins, errors };
     } catch (error) {
         console.error('❌ No se pudo leer el directorio de plugins. Asegúrate de que la carpeta "plugins" existe.', error);
-        return { plugins: new Map(), errors: [{ file: 'directorio de plugins', error: error.message }] };
+        return { plugins: new Map(), regexPlugins: [], errors: [{ file: 'directorio de plugins', error: error.message }] };
     }
 }
 
@@ -127,11 +153,12 @@ async function connectToWhatsApp() {
     }
 
     try {
-        ({ plugins } = await cargarPlugins());
+        ({ plugins, regexPlugins } = await cargarPlugins());
     } catch (pluginError) {
         console.error('❌ Error al cargar plugins:', pluginError);
         // Continuar con plugins vacíos
         plugins = new Map();
+        regexPlugins = [];
     }
 
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -285,7 +312,11 @@ async function connectToWhatsApp() {
         const commandName = args.shift().toLowerCase();
         const command = prefix + commandName;
         
-        const plugin = plugins.get(command);
+        let plugin = plugins.get(command);
+        if (!plugin && regexPlugins.length) {
+            const matched = regexPlugins.find(({ pattern }) => pattern.test(commandName));
+            if (matched) plugin = matched.plugin;
+        }
 
         if (plugin) {
             // Cooldown and rate-limiting logic
