@@ -110,12 +110,29 @@ export async function cargarPlugins() {
 // ----------------------------------------
 
 async function connectToWhatsApp() {
-    // Inicializar base de datos
-    await initDB();
+    try {
+        // Inicializar base de datos
+        await initDB();
+    } catch (dbError) {
+        console.error('❌ Error al inicializar la base de datos:', dbError);
+        // Continuar sin base de datos en caso de error
+    }
 
     // Cargar configuración y plugins al inicio
-    config = await obtenerConfig();
-    ({ plugins } = await cargarPlugins());
+    try {
+        config = await obtenerConfig();
+    } catch (configError) {
+        console.error('❌ Error al cargar configuración:', configError);
+        process.exit(1);
+    }
+
+    try {
+        ({ plugins } = await cargarPlugins());
+    } catch (pluginError) {
+        console.error('❌ Error al cargar plugins:', pluginError);
+        // Continuar con plugins vacíos
+        plugins = new Map();
+    }
 
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     const { version, isLatest } = await fetchLatestBaileysVersion();
@@ -154,7 +171,7 @@ async function connectToWhatsApp() {
             process.exit(1);
         }
         try {
-            const code = await sock.requestPairingCode(config.phoneNumber);
+            const code = await sock.requestPairingCode(config.phoneNumber.replace('+', ''));
             console.log(`🔗 Código de vinculación: ${code}`);
             console.log('Ingresa este código en WhatsApp para vincular el bot.');
         } catch (error) {
@@ -182,7 +199,10 @@ async function connectToWhatsApp() {
                 true;
             console.log('🔌 Conexión cerrada por:', lastDisconnect.error, ', reconectando:', shouldReconnect);
             if (shouldReconnect) {
-                connectToWhatsApp();
+                // Esperar 5 segundos antes de reconectar para evitar bucles rápidos
+                setTimeout(() => {
+                    connectToWhatsApp();
+                }, 5000);
             }
         } else if (connection === 'open') {
             console.log('✅ Conexión abierta. ¡Hinata-Bot está en línea!');
@@ -349,13 +369,27 @@ async function connectToWhatsApp() {
 }
 
 // Iniciar el bot
-connectToWhatsApp().catch(err => console.error("❌ Error fatal al iniciar el bot:", err));
+connectToWhatsApp().catch(err => {
+    console.error("❌ Error al iniciar la conexión WhatsApp:", err);
+    console.log("🔄 El servidor web seguirá ejecutándose. Reintentando conexión en 30 segundos...");
+    setTimeout(() => {
+        connectToWhatsApp();
+    }, 30000);
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('Bot HINATA está ejecutándose');
+  res.send('Bot HINATA está ejecutándose - Estado: Intentando conectar a WhatsApp...');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 app.listen(PORT, () => {
