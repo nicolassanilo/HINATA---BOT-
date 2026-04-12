@@ -1,12 +1,16 @@
 /**
  * @file Fondos de pantalla anime (Wallhaven.cc API).
- * @description Busca wallpapers solo categoría *anime* y SFW; envío por buffer.
+ * @description Solo categoría anime + SFW. Envío por URL (compatible con Baileys) y respaldos.
  */
 
 import axios from 'axios';
-import { obtenerConfig } from '../lib/functions.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 export const command = ['.fondoanime', '.wallanime'];
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const help = `
 Busca *fondos de pantalla anime* (alta resolución) usando la API de Wallhaven.
@@ -17,27 +21,39 @@ Busca *fondos de pantalla anime* (alta resolución) usando la API de Wallhaven.
 
 *Ejemplos:*
   • \`.fondoanime naruto\`
-  • \`.wallanime cyberpunk city anime\`
+  • \`.wallanime re zero\`
 
 *API key (opcional pero recomendada):*
-  1. Crea cuenta en https://wallhaven.cc/signup
-  2. Ve a *Ajustes de cuenta* → *API* https://wallhaven.cc/settings/account
-  3. Copia tu clave y ponla en \`config/config.json\` como \`wallhavenApiKey\`
-
-Sin clave suele funcionar para búsquedas SFW, pero los límites por minuto son más bajos (≈45 peticiones/min con clave según Wallhaven).
+  1. Cuenta en https://wallhaven.cc/signup
+  2. Ajustes → API: https://wallhaven.cc/settings/account
+  3. Clave en \`config/config.json\` → \`wallhavenApiKey\`
 `;
 
 const WALLHAVEN_SEARCH = 'https://wallhaven.cc/api/v1/search';
 const SEND_COUNT = 2;
-const API_TIMEOUT_MS = 18000;
-const IMAGE_TIMEOUT_MS = 45000;
-const MAX_IMAGE_BYTES = 22 * 1024 * 1024;
+const API_TIMEOUT_MS = 20000;
+const IMAGE_TIMEOUT_MS = 60000;
+const MAX_BUFFER_BYTES = 8 * 1024 * 1024;
+
+const CHROME_UA =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
 
 const http = axios.create({
     timeout: API_TIMEOUT_MS,
-    headers: { 'User-Agent': 'HINATA-BOT/1.1 (Wallhaven; +https://github.com/)' },
+    headers: { 'User-Agent': CHROME_UA, Accept: 'application/json' },
     validateStatus: (s) => s >= 200 && s < 500
 });
+
+function readWallhavenApiKey() {
+    try {
+        const cfgPath = path.join(__dirname, '..', 'config', 'config.json');
+        const raw = fs.readFileSync(cfgPath, 'utf8');
+        const key = JSON.parse(raw).wallhavenApiKey;
+        return key && String(key).trim() ? String(key).trim() : '';
+    } catch {
+        return '';
+    }
+}
 
 function shuffleInPlace(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -48,9 +64,8 @@ function shuffleInPlace(array) {
 }
 
 function normalizeWallhavenPath(item) {
-    if (item?.path && typeof item.path === 'string') {
-        const p = item.path;
-        if (p.startsWith('http')) return p;
+    if (item?.path && typeof item.path === 'string' && item.path.startsWith('http')) {
+        return item.path;
     }
     return null;
 }
@@ -64,38 +79,72 @@ async function searchWallpapers(query, apiKey) {
         atleast: '1920x1080',
         page: 1
     };
-    const key = apiKey && String(apiKey).trim();
-    const headers = key ? { 'X-API-Key': key } : {};
+    const headers = apiKey ? { 'X-API-Key': apiKey } : {};
 
     const res = await http.get(WALLHAVEN_SEARCH, { params, headers });
-    if (res.status === 401) {
-        const err = new Error('WALLHAVEN_AUTH');
-        throw err;
-    }
-    if (res.status === 429) {
-        const err = new Error('WALLHAVEN_RATE');
-        throw err;
-    }
+    if (res.status === 401) throw new Error('WALLHAVEN_AUTH');
+    if (res.status === 429) throw new Error('WALLHAVEN_RATE');
     if (res.status !== 200 || !res.data) {
-        const err = new Error(`Wallhaven HTTP ${res.status}`);
-        throw err;
+        throw new Error(`Wallhaven HTTP ${res.status}`);
     }
     return res.data.data || [];
 }
 
-async function downloadWallpaperBuffer(url) {
+async function downloadBuffer(url) {
     const res = await axios.get(url, {
         responseType: 'arraybuffer',
         timeout: IMAGE_TIMEOUT_MS,
-        maxContentLength: MAX_IMAGE_BYTES,
-        maxBodyLength: MAX_IMAGE_BYTES,
-        headers: {
-            Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-            'User-Agent': 'HINATA-BOT/1.1'
-        },
+        maxContentLength: MAX_BUFFER_BYTES,
+        maxBodyLength: MAX_BUFFER_BYTES,
+        headers: { Accept: 'image/*,*/*;q=0.8', 'User-Agent': CHROME_UA },
         validateStatus: (s) => s >= 200 && s < 400
     });
     return Buffer.from(res.data);
+}
+
+/**
+ * WhatsApp/Baileys suele ir mejor con { url } en imágenes pesadas que con buffer gigante.
+ */
+async function sendOneWallpaper(sock, chatId, m, q, c) {
+    const caption = `🖼️ *${q}*\n📐 ${c.resolution || '—'}${c.id ? `\n🔗 https://wallhaven.cc/w/${c.id}` : ''}`;
+
+    try {
+        await sock.sendMessage(chatId, { image: { url: c.url }, caption }, { quoted: m });
+        return true;
+    } catch (e1) {
+        console.warn('fondoanime: envío por URL (full) falló:', e1.message);
+    }
+
+    if (c.thumbUrl) {
+        try {
+            await sock.sendMessage(
+                chatId,
+                {
+                    image: { url: c.thumbUrl },
+                    caption: `${caption}\n_(vista previa; el enlace arriba lleva al original en Wallhaven)_`
+                },
+                { quoted: m }
+            );
+            return true;
+        } catch (e2) {
+            console.warn('fondoanime: envío por URL (thumb) falló:', e2.message);
+        }
+    }
+
+    if (c.file_size && c.file_size > MAX_BUFFER_BYTES) {
+        console.warn('fondoanime: archivo muy grande para buffer, se omite:', c.file_size);
+        return false;
+    }
+
+    try {
+        const buffer = await downloadBuffer(c.url);
+        const mime = c.mime && String(c.mime).startsWith('image/') ? c.mime : 'image/jpeg';
+        await sock.sendMessage(chatId, { image: buffer, mimetype: mime, caption }, { quoted: m });
+        return true;
+    } catch (e3) {
+        console.warn('fondoanime: envío por buffer falló:', e3.message);
+        return false;
+    }
 }
 
 export async function run(sock, m, { text }) {
@@ -106,19 +155,13 @@ export async function run(sock, m, { text }) {
         return await sock.sendMessage(
             chatId,
             {
-                text: '🖼️ Escribe qué fondo anime quieres.\n\n*Ejemplo:*\n.fondoanime rem re zero\n\n*API:* https://wallhaven.cc/settings/account → clave en `wallhavenApiKey` (opcional).'
+                text: '🖼️ Escribe qué fondo anime quieres.\n\n*Ejemplo:*\n.fondoanime rem\n\n*API (opcional):* https://wallhaven.cc/settings/account → `wallhavenApiKey` en config.json'
             },
             { quoted: m }
         );
     }
 
-    let wallhavenApiKey = '';
-    try {
-        const cfg = obtenerConfig();
-        wallhavenApiKey = cfg?.wallhavenApiKey || '';
-    } catch {
-        console.warn('fondoanime: sin config, se usa Wallhaven sin apikey');
-    }
+    const wallhavenApiKey = readWallhavenApiKey();
 
     await sock.sendMessage(chatId, { text: `🖼️ Buscando fondos anime: *${q}*…` }, { quoted: m });
 
@@ -128,57 +171,38 @@ export async function run(sock, m, { text }) {
         const candidates = items
             .map((it) => ({
                 url: normalizeWallhavenPath(it),
+                thumbUrl: it.thumbs?.large || it.thumbs?.original || null,
                 resolution: it.resolution || '',
-                id: it.id || ''
+                id: it.id || '',
+                file_size: typeof it.file_size === 'number' ? it.file_size : 0,
+                mime: it.file_type || 'image/jpeg'
             }))
             .filter((x) => Boolean(x.url));
 
         if (candidates.length === 0) {
             return await sock.sendMessage(
                 chatId,
-                { text: `❌ No hay resultados SFW de anime para "${q}". Prueba otras palabras o en inglés (tags de Wallhaven).` },
+                {
+                    text: `❌ No hay resultados SFW de anime para "${q}". Prueba otras palabras o en inglés (tags de Wallhaven).`
+                },
                 { quoted: m }
             );
         }
 
         shuffleInPlace(candidates);
-        const selected = candidates.slice(0, Math.min(SEND_COUNT + 4, candidates.length));
-
-        const settled = await Promise.allSettled(
-            selected.map(async (c) => {
-                const buffer = await downloadWallpaperBuffer(c.url);
-                return { buffer, c };
-            })
-        );
 
         let sent = 0;
-        for (const result of settled) {
+        for (const c of candidates) {
             if (sent >= SEND_COUNT) break;
-            if (result.status !== 'fulfilled') {
-                console.warn('fondoanime: descarga fallida', result.reason?.message || result.reason);
-                continue;
-            }
-            const { buffer, c } = result.value;
-            try {
-                await sock.sendMessage(
-                    chatId,
-                    {
-                        image: buffer,
-                        caption: `🖼️ *${q}*\n📐 ${c.resolution || '—'}${c.id ? `\n🔗 wallhaven.cc/w/${c.id}` : ''}`
-                    },
-                    { quoted: m }
-                );
-                sent++;
-            } catch (e) {
-                console.error('fondoanime: error enviando imagen', e.message);
-            }
+            const ok = await sendOneWallpaper(sock, chatId, m, q, c);
+            if (ok) sent++;
         }
 
         if (sent === 0) {
             await sock.sendMessage(
                 chatId,
                 {
-                    text: '❌ No pude descargar o enviar los archivos (muy pesados o red). Prueba otra búsqueda o más tarde.'
+                    text: '❌ No pude enviar las imágenes (WhatsApp o la red rechazaron la descarga). Prueba otra búsqueda o más tarde.'
                 },
                 { quoted: m }
             );
@@ -198,7 +222,7 @@ export async function run(sock, m, { text }) {
         if (error.message === 'WALLHAVEN_RATE') {
             return await sock.sendMessage(
                 chatId,
-                { text: '⏳ Demasiadas peticiones a Wallhaven. Espera un minuto o configura tu propia API key.' },
+                { text: '⏳ Demasiadas peticiones a Wallhaven. Espera un minuto o configura tu API key.' },
                 { quoted: m }
             );
         }
