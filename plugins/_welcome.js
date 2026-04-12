@@ -22,18 +22,20 @@ export async function before(m, { conn, participants, groupMetadata }) {
       let bienvenida = `┏━〔 *Bienvenido/a* 〕━┓
 ┃ Usuario: ${taguser}
 ┃ Grupo: *${groupMetadata.subject}*
+┃ Bot: *HINATA-BOT*
 ┃
 ┃ ✨ ¡Pásala genial con todos!
-┃ 🛠 Usa *#menu* para ver comandos
+┃ 🛠 Usa *.menu* para ver comandos
 ┗━━━━━━━━━━━━━━━━━━┛`
       await conn.sendMessage(m.chat, { image: img, caption: bienvenida, mentions: [who] })
     } else if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE || m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE) {
       let bye = `┏━〔 *Hasta pronto* 〕━┓
 ┃ Usuario: ${taguser}
 ┃ Grupo: *${groupMetadata.subject}*
+┃ Bot: *HINATA-BOT*
 ┃
 ┃ 😢 ¡Te extrañaremos!
-┃ 🛠 Usa *#menu* si vuelves
+┃ 🛠 Usa *.menu* si vuelves
 ┗━━━━━━━━━━━━━━━━━━┛`
       await conn.sendMessage(m.chat, { image: img, caption: bye, mentions: [who] })
     }
