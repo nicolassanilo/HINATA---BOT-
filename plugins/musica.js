@@ -1,6 +1,7 @@
 /**
- * @file Plugin Musica - Descarga y envía música desde múltiples plataformas usando Cobalt API
- * @version 2.0.0
+ * @file Plugin Musica Mejorado - Descarga y envía música con información detallada
+ * @version 2.1.0
+ * @author Mejorado para HINATA-BOT
  */
 
 import axios from 'axios';
@@ -10,54 +11,63 @@ import { obtenerConfig } from '../lib/functions.js';
 export const command = '.musica';
 
 export const help = `
-Descarga y envía música desde YouTube, SoundCloud y otras plataformas en diferentes formatos.
+🎵 *COMANDO DE MÚSICA MEJORADO*
+
+Descarga y envía música desde múltiples plataformas con información detallada.
 
 *Uso:*
   \`.musica <URL o término de búsqueda> [formato]\`
 
 *Formatos disponibles:*
-  - mp3 (predeterminado)
-  - wav
-  - ogg
-  - opus
-  - m4a
+  - mp3 (predeterminado - mejor calidad/peso)
+  - wav (alta calidad)
+  - ogg (buena compresión)
+  - opus (muy comprimido)
+  - m4a (compatible con iOS)
 
 *Ejemplos:*
   - \`.musica Queen - Bohemian Rhapsody\`
   - \`.musica https://www.youtube.com/watch?v=fJ9rUzIMcZQ\`
-  - \`.musica https://www.youtube.com/watch?v=fJ9rUzIMcZQ wav\`
+  - \`.musica https://youtu.be/xxxx wav\`
   - \`.musica never gonna give you up mp3\`
 
 *Plataformas soportadas:*
-  YouTube, SoundCloud, Twitter, TikTok, y más.
+  YouTube, SoundCloud, Twitter, TikTok, Instagram, y más.
 `;
 
-// Función para buscar en YouTube
+// Función para buscar en YouTube con mejor información
 async function buscarEnYouTube(query) {
   try {
     const config = obtenerConfig();
-    
-    // Si hay API key de Google, usar búsqueda personalizada (mantenemos esta lógica)
+
+    // Si hay API key de Google, usar búsqueda personalizada
     if (config.googleSearchApiKey && config.googleCseId) {
       const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${config.googleSearchApiKey}&cx=${config.googleCseId}&q=${encodeURIComponent(query + ' site:youtube.com')}`;
       const response = await axios.get(searchUrl);
-      
+
       if (response.data.items && response.data.items.length > 0) {
-        // Asegurarnos de que el link sea un video de YouTube válido
         const link = response.data.items[0].link;
         if (link.includes('youtube.com/watch')) {
-          return link;
+          return { url: link, titulo: response.data.items[0].title };
         }
       }
     }
-    
-    // Fallback: usar yt-search para encontrar el primer video
+
+    // Fallback: usar yt-search para encontrar el primer video con más info
     const searchResult = await yts(query);
     if (searchResult.videos && searchResult.videos.length > 0) {
-      return searchResult.videos[0].url;
+      const video = searchResult.videos[0];
+      return {
+        url: video.url,
+        titulo: video.title,
+        duracion: video.duration?.timestamp || video.duration,
+        vistas: video.views,
+        canal: video.author?.name,
+        fecha: video.uploadedAt
+      };
     }
 
-    return null; // Si no se encuentra nada
+    return null;
   } catch (err) {
     console.error('Error en búsqueda de YouTube:', err);
     return null;
@@ -74,10 +84,32 @@ function esURL(text) {
   }
 }
 
-// Función para descargar usando Cobalt API
+// Función para obtener información de la URL (si es YouTube)
+async function obtenerInfoURL(url) {
+  try {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const videoInfo = await yts({ videoId: url.split('v=')[1] || url.split('/').pop() });
+      if (videoInfo) {
+        return {
+          titulo: videoInfo.title,
+          duracion: videoInfo.duration?.timestamp,
+          vistas: videoInfo.views,
+          canal: videoInfo.author?.name,
+          fecha: videoInfo.uploadedAt
+        };
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('Error obteniendo info de URL:', err);
+    return null;
+  }
+}
+
+// Función para descargar usando Cobalt API mejorada
 async function descargarConCobalt(url, formato = 'mp3') {
   const COBALT_API = 'https://api.cobalt.tools/api/json';
-  
+
   try {
     const response = await axios.post(COBALT_API, {
       url: url,
@@ -92,7 +124,7 @@ async function descargarConCobalt(url, formato = 'mp3') {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      timeout: 30000 // 30 segundos timeout
+      timeout: 30000
     });
 
     if (response.data && response.data.status === 'redirect' && response.data.url) {
@@ -127,26 +159,36 @@ export async function run(sock, m, { text }) {
   const chatId = m.key.remoteJid;
 
   if (!text || text.trim().length === 0) {
-    return await sock.sendMessage(chatId, { 
-      text: `🎵 *Uso del comando .musica*\n\n` +
-            `\`.musica <URL o búsqueda> [formato]\`\n\n` +
-            `*Formatos:* mp3, wav, ogg, opus, m4a\n\n` +
-            `*Ejemplos:*\n` +
+    return await sock.sendMessage(chatId, {
+      text: `🎵 *COMANDO DE MÚSICA MEJORADO* 🎵\n\n` +
+            `💡 *Uso:* \`.musica <URL o búsqueda> [formato]\`\n\n` +
+            `🎼 *Formatos disponibles:*\n` +
+            `• mp3 (predeterminado - óptimo)\n` +
+            `• wav (alta calidad)\n` +
+            `• ogg (buena compresión)\n` +
+            `• opus (muy comprimido)\n` +
+            `• m4a (compatible iOS)\n\n` +
+            `📱 *Ejemplos:*\n` +
             `• \`.musica Bohemian Rhapsody\`\n` +
             `• \`.musica https://youtu.be/xxxx\`\n` +
             `• \`.musica https://youtu.be/xxxx wav\`\n\n` +
-            `*Plataformas:* YouTube, SoundCloud, TikTok, Twitter, etc.`
+            `🌐 *Plataformas:* YouTube, SoundCloud, TikTok, Twitter, Instagram, etc.\n\n` +
+            `⚡ *Características:*\n` +
+            `• Información detallada de la canción\n` +
+            `• Tamaño optimizado para WhatsApp\n` +
+            `• Múltiples formatos de audio\n` +
+            `• Búsqueda inteligente`
     }, { quoted: m });
   }
 
   // Parsear argumentos
   const args = text.trim().split(/\s+/);
   const formatosValidos = ['mp3', 'wav', 'ogg', 'opus', 'm4a'];
-  
+
   // Verificar si el último argumento es un formato
   let formato = 'mp3';
   let query = text.trim();
-  
+
   const ultimoArg = args[args.length - 1].toLowerCase();
   if (formatosValidos.includes(ultimoArg)) {
     formato = ultimoArg;
@@ -154,49 +196,75 @@ export async function run(sock, m, { text }) {
   }
 
   let url = null;
+  let infoCancion = null;
 
   // Verificar si es una URL directa
   if (esURL(query)) {
     url = query;
+    infoCancion = await obtenerInfoURL(url);
   } else {
     // Buscar en YouTube
-    await sock.sendMessage(chatId, { 
-      text: `🔍 Buscando: *${query}*...` 
+    await sock.sendMessage(chatId, {
+      text: `🔍 *Buscando:* "${query}"...`
     }, { quoted: m });
-    
-    url = await buscarEnYouTube(query);
-    
-    if (!url) {
-      return await sock.sendMessage(chatId, { 
-        text: `❌ No se encontraron resultados para: *${query}*\n\n` +
-              `Intenta con una URL directa de YouTube, SoundCloud, etc.`
+
+    const resultadoBusqueda = await buscarEnYouTube(query);
+
+    if (!resultadoBusqueda) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ *No se encontraron resultados* para: "${query}"\n\n` +
+              `💡 *Sugerencias:*\n` +
+              `• Verifica la ortografía\n` +
+              `• Usa el nombre del artista y canción\n` +
+              `• Prueba con una URL directa\n` +
+              `• Evita caracteres especiales`
       }, { quoted: m });
     }
+
+    url = resultadoBusqueda.url;
+    infoCancion = resultadoBusqueda;
   }
 
-  // Informar inicio de descarga
-  await sock.sendMessage(chatId, { 
-    text: `⬇️ *Descargando audio...*\n\n` +
-          `📎 Formato: *${formato.toUpperCase()}*\n` +
-          `🔗 URL: ${url}\n\n` +
-          `⏳ Esto puede tardar unos segundos...`
-  }, { quoted: m });
+  // Mostrar información de la canción si está disponible
+  if (infoCancion) {
+    await sock.sendMessage(chatId, {
+      text: `🎵 *INFORMACIÓN DE LA CANCIÓN* 🎵\n\n` +
+            `📀 *Título:* ${infoCancion.titulo || 'Desconocido'}\n` +
+            `${infoCancion.canal ? `🎤 *Artista/Canal:* ${infoCancion.canal}\n` : ''}` +
+            `${infoCancion.duracion ? `⏱️ *Duración:* ${infoCancion.duracion}\n` : ''}` +
+            `${infoCancion.vistas ? `👀 *Vistas:* ${infoCancion.vistas?.toLocaleString()}\n` : ''}` +
+            `${infoCancion.fecha ? `📅 *Subido:* ${infoCancion.fecha}\n` : ''}\n` +
+            `⬇️ *Descargando en formato ${formato.toUpperCase()}...*`
+    }, { quoted: m });
+  } else {
+    // Mensaje de descarga sin info detallada
+    await sock.sendMessage(chatId, {
+      text: `⬇️ *Descargando audio...*\n\n` +
+            `📎 *Formato:* ${formato.toUpperCase()}\n` +
+            `🔗 *URL:* ${url}\n\n` +
+            `⏳ *Procesando...*`
+    }, { quoted: m });
+  }
 
   try {
     // Descargar usando Cobalt API
     const resultado = await descargarConCobalt(url, formato);
 
     if (!resultado.success) {
-      return await sock.sendMessage(chatId, { 
-        text: `❌ *Error al descargar:*\n${resultado.error}\n\n` +
-              `💡 Verifica que la URL sea válida y que el contenido esté disponible.`
+      return await sock.sendMessage(chatId, {
+        text: `❌ *Error en la descarga:*\n${resultado.error}\n\n` +
+              `💡 *Posibles soluciones:*\n` +
+              `• Verifica que la URL sea válida\n` +
+              `• El contenido podría estar restringido\n` +
+              `• Prueba con otro formato\n` +
+              `• Intenta más tarde`
       }, { quoted: m });
     }
 
     // Descargar el archivo de audio
     const audioResponse = await axios.get(resultado.url, {
       responseType: 'arraybuffer',
-      timeout: 60000, // 60 segundos para descargar
+      timeout: 60000,
       maxContentLength: 50 * 1024 * 1024, // 50 MB máximo
       maxBodyLength: 50 * 1024 * 1024
     });
@@ -206,9 +274,14 @@ export async function run(sock, m, { text }) {
     // Verificar tamaño
     const maxSizeBytes = 50 * 1024 * 1024; // 50 MB
     if (buffer.length > maxSizeBytes) {
-      return await sock.sendMessage(chatId, { 
-        text: `❌ El archivo es demasiado grande para WhatsApp (${(buffer.length / 1024 / 1024).toFixed(2)} MB).\n\n` +
-              `Intenta con una canción más corta o usa formato MP3 para reducir el tamaño.`
+      return await sock.sendMessage(chatId, {
+        text: `❌ *Archivo demasiado grande*\n\n` +
+              `📏 *Tamaño:* ${(buffer.length / 1024 / 1024).toFixed(2)} MB\n` +
+              `📱 *Límite WhatsApp:* 50 MB\n\n` +
+              `💡 *Sugerencias:*\n` +
+              `• Usa formato MP3 para reducir tamaño\n` +
+              `• Busca una versión más corta\n` +
+              `• Divide en partes si es posible`
       }, { quoted: m });
     }
 
@@ -224,31 +297,45 @@ export async function run(sock, m, { text }) {
     const mimetype = mimetypes[formato] || 'audio/mpeg';
     const filename = resultado.filename || `audio.${formato}`;
 
-    // Enviar audio
+    // Enviar audio con información adicional
     await sock.sendMessage(chatId, {
       audio: buffer,
       mimetype: mimetype,
       fileName: filename,
-      ptt: false // No es nota de voz
+      ptt: false,
+      contextInfo: {
+        externalAdReply: {
+          title: infoCancion?.titulo || filename,
+          body: `🎵 Formato: ${formato.toUpperCase()} | Tamaño: ${(buffer.length / 1024).toFixed(2)} KB`,
+          mediaType: 2,
+          thumbnailUrl: infoCancion?.thumbnail || null,
+          sourceUrl: url
+        }
+      }
     }, { quoted: m });
 
-    console.log(`✅ Audio enviado: ${filename} (${(buffer.length / 1024).toFixed(2)} KB)`);
+    console.log(`✅ Audio enviado: ${filename} (${(buffer.length / 1024).toFixed(2)} KB) - Formato: ${formato}`);
 
   } catch (err) {
     console.error('Error al procesar audio:', err);
-    
-    let errorMsg = '❌ Ocurrió un error al procesar el audio.\n\n';
-    
+
+    let errorMsg = '❌ *Error al procesar el audio*\n\n';
+
     if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
-      errorMsg += '⏱️ Tiempo de espera agotado. El archivo puede ser muy grande o el servidor está lento.';
+      errorMsg += '⏱️ *Tiempo de espera agotado*\n\n' +
+                  'El archivo puede ser muy grande o el servidor está lento.\n' +
+                  'Intenta con un formato más comprimido (opus/mp3).';
     } else if (err.response && err.response.status === 404) {
-      errorMsg += '🔍 No se encontró el contenido. Verifica que la URL sea correcta.';
+      errorMsg += '🔍 *Contenido no encontrado*\n\n' +
+                  'Verifica que la URL sea correcta y que el contenido esté disponible.';
     } else if (err.message && err.message.includes('maxContentLength')) {
-      errorMsg += '📦 El archivo es demasiado grande para descargar.';
+      errorMsg += '📦 *Archivo demasiado grande*\n\n' +
+                  'El archivo supera el límite de descarga. Prueba con MP3.';
     } else {
-      errorMsg += `💡 Intenta con otra URL o formato.\n\nError: ${err.message}`;
+      errorMsg += `💡 *Error técnico:* ${err.message}\n\n` +
+                  'Intenta con otra URL, formato diferente, o contacta al administrador.';
     }
-    
+
     await sock.sendMessage(chatId, { text: errorMsg }, { quoted: m });
   }
 }
