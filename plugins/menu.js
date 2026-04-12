@@ -19,6 +19,7 @@ export async function run(sock, m) {
 │  │
 │  ├─ *.anime* <nombre>
 │  │  └ _Busca información de un anime._
+│  │  └ _Ejemplo local: .anime hinata enviará imágenes desde la carpeta local._
 │  │
 │  ├─ *.pinterest* <texto>
 │  │  └ _Busca imágenes en Pinterest._
