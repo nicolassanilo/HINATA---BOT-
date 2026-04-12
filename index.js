@@ -21,6 +21,7 @@ import fs from 'fs/promises';
 import { Boom } from '@hapi/boom';
 import express from 'express';
 import { initDB, db } from './db.js';
+import { fileURLToPath } from 'url';
 
 // Importa makeWASocket como default
 import makeWASocket from '@whiskeysockets/baileys';
