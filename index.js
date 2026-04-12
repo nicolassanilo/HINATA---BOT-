@@ -180,7 +180,6 @@ async function connectToWhatsApp() {
 
     const sock = makeWASocket({
         version,
-        printQRInTerminal: config.authMethod === 'qr',
         auth: {
             creds: state.creds,
             // Almacenamiento en caché para mejorar el rendimiento
@@ -216,7 +215,7 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect } = update;
 
         // Mostrar el QR explícitamente en terminal si viene en el update
-        if (update.qr) {
+        if (update.qr && config.authMethod === 'qr') {
             try {
                 qrcode.generate(update.qr, { small: true });
                 console.log('🔑 Escanea el QR mostrado en la terminal para iniciar sesión.');
