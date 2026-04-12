@@ -16,6 +16,7 @@ import {
 } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
+import qrcodeImg from 'qrcode';
 import path from 'path';
 import fs from 'fs/promises';
 import { Boom } from '@hapi/boom';
@@ -34,6 +35,8 @@ export let plugins = new Map();
 export let regexPlugins = [];
 // Almacén global para la configuración
 let config = {};
+// Almacén global para el QR actual
+let currentQR = null;
 
 // Cooldown maps for rate-limiting
 // key: `${command}:${userId}` -> timestamp (ms)
@@ -217,6 +220,15 @@ async function connectToWhatsApp() {
             try {
                 qrcode.generate(update.qr, { small: true });
                 console.log('🔑 Escanea el QR mostrado en la terminal para iniciar sesión.');
+                // Generar imagen QR para web
+                qrcodeImg.toDataURL(update.qr, { width: 300, margin: 2 }, (err, url) => {
+                    if (!err) {
+                        currentQR = url;
+                        console.log('🌐 QR también disponible en http://localhost:3000/qr');
+                    } else {
+                        console.error('❌ Error al generar QR para web:', err);
+                    }
+                });
             } catch (err) {
                 console.log('🔑 QR recibido pero no se pudo mostrar en terminal:', err.message || err);
             }
@@ -234,6 +246,7 @@ async function connectToWhatsApp() {
             }
         } else if (connection === 'open') {
             console.log('✅ Conexión abierta. ¡Hinata-Bot está en línea!');
+            currentQR = null; // Limpiar QR cuando esté conectado
         }
     });
 
@@ -413,7 +426,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('Bot HINATA está ejecutándose - Estado: Intentando conectar a WhatsApp...');
+  res.send('Bot HINATA está ejecutándose - Estado: Intentando conectar a WhatsApp...<br><a href="/qr">Ver QR para vinculación</a>');
 });
 
 app.get('/health', (req, res) => {
@@ -422,6 +435,94 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+app.get('/qr', (req, res) => {
+  if (currentQR) {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HINATA Bot - Vinculación QR</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+          }
+          .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          }
+          h1 {
+            color: #333;
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+          }
+          p {
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>🔗 Vincular HINATA Bot</h1>
+          <p>Escanea el código QR con WhatsApp para vincular el bot:</p>
+          <img src="${currentQR}" alt="QR Code para vincular el bot">
+          <p>Una vez escaneado, el bot estará listo para usar.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  } else {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HINATA Bot - Estado</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+          }
+          .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          }
+          h1 {
+            color: #333;
+          }
+          p {
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>✅ HINATA Bot Conectado</h1>
+          <p>El bot ya está vinculado y funcionando correctamente.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
 });
 
 app.listen(PORT, () => {
