@@ -16,7 +16,13 @@ import {
 } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
-import qrcodeImg from 'qrcode';
+let qrcodeImg;
+try {
+    qrcodeImg = await import('qrcode');
+} catch (e) {
+    console.log('⚠️ Módulo qrcode no disponible, QR solo en terminal');
+    qrcodeImg = null;
+}
 import path from 'path';
 import fs from 'fs/promises';
 import { Boom } from '@hapi/boom';
@@ -222,17 +228,25 @@ async function connectToWhatsApp() {
             try {
                 qrcode.generate(update.qr, { small: true });
                 console.log('🔑 Escanea el QR mostrado en la terminal para iniciar sesión.');
-                // Generar imagen QR para web
-                qrcodeImg.toDataURL(update.qr, { width: 300, margin: 2 }, (err, url) => {
-                    if (!err) {
-                        currentQR = url;
-                        console.log('🌐 QR también disponible en http://localhost:3000/qr');
-                    } else {
-                        console.error('❌ Error al generar QR para web:', err);
-                    }
-                });
+                // Generar imagen QR para web si el módulo está disponible
+                if (qrcodeImg && qrcodeImg.default && qrcodeImg.default.toDataURL) {
+                    qrcodeImg.default.toDataURL(update.qr, { width: 300, margin: 2 }, (err, url) => {
+                        if (!err) {
+                            currentQR = url;
+                            console.log('🌐 QR generado correctamente para web');
+                            console.log('🌐 QR también disponible en http://localhost:3000/qr');
+                        } else {
+                            console.error('❌ Error al generar QR para web:', err);
+                            currentQR = null;
+                        }
+                    });
+                } else {
+                    console.log('⚠️ Módulo qrcode no disponible para web, QR solo en terminal');
+                    currentQR = null;
+                }
             } catch (err) {
                 console.log('🔑 QR recibido pero no se pudo mostrar en terminal:', err.message || err);
+                currentQR = null;
             }
         }
         if (connection === 'close') {
@@ -248,7 +262,10 @@ async function connectToWhatsApp() {
             }
         } else if (connection === 'open') {
             console.log('✅ Conexión abierta. ¡Hinata-Bot está en línea!');
-            currentQR = null; // Limpiar QR cuando esté conectado
+            if (currentQR) {
+                console.log('🧹 Limpiando QR ya que el bot está conectado');
+                currentQR = null;
+            }
         }
     });
 
@@ -439,6 +456,14 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/qr-status', (req, res) => {
+  res.json({
+    hasQR: !!currentQR,
+    qr: currentQR,
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/qr', (req, res) => {
   if (currentQR) {
     res.send(`
@@ -469,9 +494,22 @@ app.get('/qr', (req, res) => {
           img {
             max-width: 100%;
             height: auto;
+            border: 2px solid #ddd;
+            border-radius: 5px;
           }
           p {
             color: #666;
+          }
+          .status {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+            color: #2e7d32;
+          }
+          .loading {
+            display: none;
+            margin-top: 20px;
           }
         </style>
       </head>
@@ -479,9 +517,37 @@ app.get('/qr', (req, res) => {
         <div class="container">
           <h1>🔗 Vincular HINATA Bot</h1>
           <p>Escanea el código QR con WhatsApp para vincular el bot:</p>
-          <img src="${currentQR}" alt="QR Code para vincular el bot">
+          <img id="qr-image" src="${currentQR}" alt="QR Code para vincular el bot">
           <p>Una vez escaneado, el bot estará listo para usar.</p>
+          <div class="status">
+            <p>✅ QR generado correctamente</p>
+            <p><small>Última actualización: ${new Date().toLocaleString()}</small></p>
+          </div>
+          <div class="loading" id="loading">
+            <p>🔄 Generando nuevo QR...</p>
+          </div>
         </div>
+
+        <script>
+          // Función para verificar si hay un nuevo QR
+          function checkQR() {
+            fetch('/qr-status')
+              .then(response => response.json())
+              .then(data => {
+                if (data.hasQR && data.qr !== document.getElementById('qr-image').src) {
+                  document.getElementById('loading').style.display = 'block';
+                  setTimeout(() => {
+                    document.getElementById('qr-image').src = data.qr;
+                    document.getElementById('loading').style.display = 'none';
+                  }, 1000);
+                }
+              })
+              .catch(err => console.log('Error checking QR:', err));
+          }
+
+          // Verificar cada 5 segundos
+          setInterval(checkQR, 5000);
+        </script>
       </body>
       </html>
     `);
@@ -492,7 +558,7 @@ app.get('/qr', (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>HINATA Bot - Estado</title>
+        <title>HINATA Bot - Vinculación QR</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -501,7 +567,7 @@ app.get('/qr', (req, res) => {
             background-color: #f0f0f0;
           }
           .container {
-            max-width: 400px;
+            max-width: 500px;
             margin: 0 auto;
             background: white;
             padding: 20px;
@@ -511,16 +577,73 @@ app.get('/qr', (req, res) => {
           h1 {
             color: #333;
           }
-          p {
-            color: #666;
+          .instructions {
+            text-align: left;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+          }
+          .instructions h3 {
+            color: #007bff;
+            margin-top: 0;
+          }
+          .terminal-code {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+          }
+          .refresh {
+            margin-top: 20px;
+          }
+          .refresh button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+          }
+          .refresh button:hover {
+            background-color: #0056b3;
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <h1>✅ HINATA Bot Conectado</h1>
-          <p>El bot ya está vinculado y funcionando correctamente.</p>
+          <h1>🔗 Vincular HINATA Bot</h1>
+
+          <div class="instructions">
+            <h3>📱 Instrucciones para vincular el bot:</h3>
+            <p>El código QR se muestra en la terminal donde está ejecutándose el bot. Sigue estos pasos:</p>
+            <ol>
+              <li>Abre WhatsApp en tu teléfono</li>
+              <li>Ve a <strong>Dispositivos vinculados</strong> (tres puntos > Dispositivos vinculados)</li>
+              <li>Toca <strong>Vincular un dispositivo</strong></li>
+              <li>Escanea el código QR que aparece en la terminal</li>
+            </ol>
+          </div>
+
+          <div class="terminal-code">🔑 Escanea el QR mostrado en la terminal para iniciar sesión.
+[QR Code ASCII Art aparecerá aquí]</div>
+
+          <p><em>Nota: La visualización web del QR no está disponible actualmente debido a un problema con las dependencias.</em></p>
+
+          <div class="refresh">
+            <button onclick="window.location.reload()">🔄 Recargar página</button>
+          </div>
         </div>
+
+        <script>
+          // Auto-refresh cada 30 segundos
+          setTimeout(() => {
+            window.location.reload();
+          }, 30000);
+        </script>
       </body>
       </html>
     `);
@@ -529,4 +652,7 @@ app.get('/qr', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🌐 Servidor web en puerto ${PORT}`);
+  console.log(`🌐 Página principal: http://localhost:${PORT}`);
+  console.log(`🌐 Página QR: http://localhost:${PORT}/qr`);
+  console.log(`🌐 Estado QR: http://localhost:${PORT}/qr-status`);
 });
