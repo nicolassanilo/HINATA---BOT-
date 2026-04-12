@@ -121,31 +121,31 @@ const ACCIONES_MAP = {
 
 // Textos para cada acción
 const TEXTOS_ACCIONES = {
-  'punch': ['le pegó a', 'le dio un puñetazo a', 'golpeó a'],
-  'slap': ['abofeteó a', 'le dio una cachetada a'],
-  'hug': ['abrazó a', 'le dio un abrazo a', 'está abrazando a'],
-  'kiss': ['besó a', 'le dio un beso a', 'está besando a'],
-  'pat': ['acarició a', 'le hizo cariños a', 'le dio palmaditas a'],
-  'bite': ['mordió a', 'le dio un mordisco a', 'está mordiendo a'],
-  'nom': ['alimentó a', 'le dio de comer a', 'está alimentando a'],
-  'blush': ['se sonrojó', 'está sonrojado/a', 'se puso rojo/a'],
-  'smile': ['sonrió', 'está sonriendo', 'tiene una sonrisa'],
-  'wave': ['saludó a', 'le hizo señas a', 'está saludando a'],
-  'dance': ['bailó con', 'está bailando con', 'invitó a bailar a'],
-  'cry': ['está llorando', 'lloró', 'se puso a llorar'],
-  'laugh': ['se rió', 'está riendo', 'se carcajeó'],
-  'sleep': ['se durmió', 'está durmiendo', 'se fue a dormir'],
-  'confused': ['está pensando', 'reflexionó', 'se puso a pensar'],
-  'wink': ['le guiñó el ojo a', 'le hizo un guiño a', 'guiñó a'],
-  'cuddle': ['acurrucó a', 'se acurrucó con', 'está mimando a'],
-  'poke': ['picó a', 'le dio un toque a', 'está molestando a'],
-  'tickle': ['le hizo cosquillas a', 'está haciéndole cosquillas a', 'molestó a']
+  'punch': ['punched', 'gave a punch to', 'hit'],
+  'slap': ['slapped', 'gave a slap to'],
+  'hug': ['hugged', 'gave a hug to', 'is hugging'],
+  'kiss': ['kissed', 'gave a kiss to', 'is kissing'],
+  'pat': ['patted', 'gave pats to', 'gave headpats to'],
+  'bite': ['bit', 'gave a bite to', 'is biting'],
+  'nom': ['fed', 'gave food to', 'is feeding'],
+  'blush': ['blushed', 'is blushing', 'turned red'],
+  'smile': ['smiled', 'is smiling', 'has a smile'],
+  'wave': ['waved at', 'made signs to', 'is waving at'],
+  'dance': ['danced with', 'is dancing with', 'invited to dance'],
+  'cry': ['is crying', 'cried', 'started crying'],
+  'laugh': ['laughed', 'is laughing', 'burst out laughing'],
+  'sleep': ['fell asleep', 'is sleeping', 'went to sleep'],
+  'confused': ['is thinking', 'pondered', 'got confused'],
+  'wink': ['winked at', 'gave a wink to', 'winked'],
+  'cuddle': ['cuddled', 'cuddled with', 'is cuddling'],
+  'poke': ['poked', 'gave a poke to', 'is annoying'],
+  'tickle': ['tickled', 'is tickling', 'annoyed']
 };
 
 // Función para obtener GIF de OtakuGIFs API
 async function obtenerGif(action) {
   try {
-    const url = `https://api.otakugifs.xyz/gif?reaction=${action}`;
+    const url = `https://api.otakugifs.xyz/gif/allreactions`;
     const response = await axios.get(url, { timeout: 10000 });
 
     if (response.data && response.data.url) {
