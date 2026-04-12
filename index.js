@@ -24,6 +24,9 @@ import express from 'express';
 import { initDB, db } from './db.js';
 import { fileURLToPath } from 'url';
 
+// Importar configuración global
+import './config_nagiv3.js';
+
 // Importa makeWASocket como default
 import makeWASocket from '@whiskeysockets/baileys';
 
