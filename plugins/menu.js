@@ -30,6 +30,10 @@ export async function run(sock, m) {
 ║ 🖼️ *.papel* <texto>
 ║    └ Fondos de pantalla
 ║
+║ 🎌 *.fondoanime* <texto>
+║    └ Fondos anime (Wallhaven API)
+║    └ Alias: *.wallanime*
+║
 ╚════════════════════╝
 
 ╔═══🎵 MULTIMEDIA ═══╗
