@@ -23,7 +23,7 @@ export const command = [
   '.pensar', '.think',
   '.guiñar', '.wink',
   '.abrazar2', '.cuddle',
-  '.bofetada', '.slap',
+  '.bofetada',
   '.patada', '.kick',
   '.picar', '.poke',
   '.cosquillas', '.tickle',
@@ -145,10 +145,10 @@ const TEXTOS_ACCIONES = {
 // Función para obtener GIF de OtakuGIFs API
 async function obtenerGif(action) {
   try {
-    const url = `https://api.otakugifs.xyz/gif/allreactions`;
+    const url = `https://api.otakugifs.xyz/gif?reaction=${encodeURIComponent(action)}&format=GIF`;
     const response = await axios.get(url, { timeout: 10000 });
 
-    if (response.data && response.data.url) {
+    if (response.data?.url) {
       return response.data.url;
     }
     return null;
