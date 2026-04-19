@@ -28,7 +28,7 @@ import fs from 'fs/promises';
 import { Boom } from '@hapi/boom';
 import express from 'express';
 import { initDB, db } from './db.js';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 // Importar configuración global
 import './config_nagiv3.js';
@@ -43,7 +43,30 @@ const __dirname = path.dirname(__filename);
 export let plugins = new Map();
 export let regexPlugins = [];
 // Almacén global para la configuración
-let config = {};
+export let config = {};
+
+export function getConfig() {
+    return config;
+}
+
+export async function refreshConfig() {
+    config = await obtenerConfig();
+    return config;
+}
+
+export async function reloadPlugins() {
+    const latestConfig = await refreshConfig().catch((error) => {
+        console.error('⚠️ No se pudo recargar la configuración, usando la configuración actual:', error);
+        return config;
+    });
+
+    const result = await cargarPlugins();
+    return {
+        config: latestConfig,
+        ...result
+    };
+}
+
 // Almacén global para el QR actual
 let currentQR = null;
 
@@ -67,8 +90,7 @@ async function obtenerConfig() {
         return JSON.parse(data);
     } catch (error) {
         console.error('❌ Error al leer o parsear config/config.json. Asegúrate de que el archivo existe y es un JSON válido.', error);
-        // Termina el proceso si no hay configuración, ya que es vital.
-        process.exit(1);
+        throw error;
     }
 }
 
@@ -90,7 +112,8 @@ export async function cargarPlugins() {
         for (const file of pluginFiles) {
             try {
                 // Usamos un timestamp para evitar problemas de caché con import()
-                const pluginPath = path.join(pluginsDir, file) + `?v=${Date.now()}`;
+                const pluginFilePath = path.join(pluginsDir, file);
+                const pluginPath = `${pathToFileURL(pluginFilePath).href}?v=${Date.now()}`;
                 const imported = await import(pluginPath);
                 const pluginDefinition = imported.default || imported;
                 const commands = pluginDefinition.command || pluginDefinition.commands || imported.command || imported.commands;
@@ -357,10 +380,10 @@ async function connectToWhatsApp() {
                 const now = Date.now();
                 // userId y chatId ya están definidos arriba
 
-                // Reload runtime config so changes via .setcooldown apply immediately
-                let runtimeConfig = {};
+                // Refrescar configuración en memoria para que cambios en config.json se apliquen inmediatamente
+                let runtimeConfig = config;
                 try {
-                    runtimeConfig = await obtenerConfig();
+                    runtimeConfig = await refreshConfig();
                 } catch (e) {
                     runtimeConfig = config || {};
                 }

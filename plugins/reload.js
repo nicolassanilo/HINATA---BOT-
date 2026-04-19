@@ -1,9 +1,4 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { cargarPlugins } from '../index.js';
-
-// Helper para obtener la ruta absoluta del config.json
-const configPath = path.join(process.cwd(), 'config', 'config.json');
+import { reloadPlugins, getConfig } from '../index.js';
 
 export const command = ['.reload', '.updateplugins'];
 
@@ -12,12 +7,16 @@ export async function run(sock, msg) {
     const chatId = msg.key.remoteJid;
 
     try {
-        // 1. Cargar la configuración para obtener el JID del propietario
-        const configData = await fs.readFile(configPath, 'utf8');
-        const config = JSON.parse(configData);
+        let runtimeConfig = getConfig();
+        let ownerJid = (runtimeConfig.ownerJid || '').trim();
+        let propietario = (runtimeConfig.propietario || '').trim();
 
-        const ownerJid = (config.ownerJid || '').trim();
-        const propietario = (config.propietario || '').trim();
+        if (!ownerJid && !propietario) {
+            const result = await reloadPlugins();
+            runtimeConfig = result.config || runtimeConfig;
+            ownerJid = (runtimeConfig.ownerJid || '').trim();
+            propietario = (runtimeConfig.propietario || '').trim();
+        }
 
         // 2. Verificar si el remitente es el propietario
         let isOwner = false;
@@ -26,7 +25,7 @@ export async function run(sock, msg) {
         } else if (propietario && senderId.includes(propietario)) {
             isOwner = true;
         }
-        
+
         if (!isOwner) {
             await sock.sendMessage(chatId, { text: '❌ No tienes permiso para usar este comando. Solo el propietario puede recargar los plugins.' }, { quoted: msg });
             return;
@@ -35,7 +34,7 @@ export async function run(sock, msg) {
         // 3. Si es el propietario, ejecutar la recarga
         await sock.sendMessage(chatId, { text: '🔄 Recargando plugins... Por favor espera.' }, { quoted: msg });
 
-        const { plugins: loadedPlugins, errors } = await cargarPlugins();
+        const { plugins: loadedPlugins, errors } = await reloadPlugins();
 
         let responseText = `✅ Recarga completada. Se cargaron ${loadedPlugins.size} comandos.`;
 
