@@ -142,20 +142,86 @@ const TEXTOS_ACCIONES = {
   'tickle': ['tickled', 'is tickling', 'annoyed']
 };
 
-// Función para obtener GIF de OtakuGIFs API
+// Función para obtener GIF de múltiples APIs
 async function obtenerGif(action) {
-  try {
-    const url = `https://api.otakugifs.xyz/gif/allreactions`;
-    const response = await axios.get(url, { timeout: 10000 });
-
-    if (response.data && response.data.url) {
-      return response.data.url;
+  const apis = [
+    {
+      nombre: 'nekobot',
+      obtener: async () => {
+        try {
+          // Mapeo de acciones a tipos de imagen en nekobot
+          const nekoImageTypes = {
+            'punch': 'neko',
+            'slap': 'neko',
+            'hug': 'neko',
+            'kiss': 'neko',
+            'pat': 'neko',
+            'bite': 'neko',
+            'nom': 'neko',
+            'blush': 'neko',
+            'smile': 'neko',
+            'wave': 'neko',
+            'dance': 'neko',
+            'cry': 'neko',
+            'laugh': 'neko',
+            'sleep': 'neko',
+            'confused': 'neko',
+            'wink': 'neko',
+            'cuddle': 'neko',
+            'poke': 'neko',
+            'tickle': 'neko'
+          };
+          
+          const imageType = nekoImageTypes[action] || 'neko';
+          const url = `https://nekobot.xyz/api/image?type=${imageType}`;
+          const response = await axios.get(url, { timeout: 8000 });
+          
+          if (response.data && response.data.image_url) {
+            return response.data.image_url;
+          }
+          return null;
+        } catch (error) {
+          console.error('Error al obtener imagen de NekoBot:', error.message);
+          return null;
+        }
+      }
+    },
+    {
+      nombre: 'otakugifs',
+      obtener: async () => {
+        try {
+          const url = `https://api.otakugifs.xyz/gif/allreactions`;
+          const response = await axios.get(url, { timeout: 8000 });
+          
+          if (response.data && response.data.url) {
+            return response.data.url;
+          }
+          return null;
+        } catch (error) {
+          console.error('Error al obtener GIF de OtakuGIFs:', error.message);
+          return null;
+        }
+      }
     }
-    return null;
-  } catch (error) {
-    console.error('Error al obtener GIF de OtakuGIFs:', error.message);
-    return null;
+  ];
+
+  // Intentar cada API en orden
+  for (const api of apis) {
+    try {
+      console.log(`📡 Intentando obtener imagen/GIF desde ${api.nombre}...`);
+      const url = await api.obtener();
+      if (url) {
+        console.log(`✅ Imagen obtenida desde ${api.nombre}`);
+        return url;
+      }
+    } catch (error) {
+      console.error(`❌ Error con ${api.nombre}:`, error.message);
+      continue;
+    }
   }
+  
+  console.error('⚠️ No se pudo obtener imagen de ninguna API');
+  return null;
 }
 
 export async function run(sock, m, { command }) {

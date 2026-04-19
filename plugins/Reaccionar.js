@@ -1,60 +1,85 @@
-import axios from 'axios';
+/**
+ * @file Plugin Reaccionar - Envía múltiples reacciones en secuencia
+ * @version 2.0.0
+ * @description Mejora: Mejor manejo de errores y reportes de estado
+ */
 
 const handler = async (m, { conn, args }) => {
-
-  if (!args[0]) return conn.reply(m.chat, '🍟 Por favor, proporciona un término.', m);
-  
-  try {
-    await m.react('🕓');
-  } catch (error) {
-    console.error('Error inicial al reaccionar:', error);
-  }
 
   const emojis = [
     '😊', '🔥', '💥', '😍', '🤩', '🎉', '😘', '🤗', '😆', '😂',
     '🎊', '🔴', '💖', '❤️', '💕', '🥳', '🤯', '💯', '😎', '😌',
     '😏', '🤔', '🥺', '😮', '🤪', '😅', '😇', '🤭', '🤫', '🙃',
-    '😏', '🤑', '💀', '👻', '👾', '🤖', '👺', '👹', '🦸', '🦸‍♀️',
-    '🦸‍♂️', '🌈', '🌟', '⚡', '💫', '🌧️', '🔥', '🔥', '🌸', '🌼',
+    '🤑', '💀', '👻', '👾', '🤖', '👺', '👹', '🦸', '🦸‍♀️',
+    '🦸‍♂️', '🌈', '🌟', '⚡', '💫', '🌧️', '🌸', '🌼',
     '🌻', '🌷', '🍀', '🍁', '🍂', '🍃', '🍉', '🍓', '🍒', '🍑',
     '🥭', '🍍', '🥤', '🍦', '🍰', '🎂', '🍭', '🍬', '🍫', '🍿',
-    '🎈', '🎀', '🎁', '📦', '🏆', '🥇', '🥈', '🥉', '🎊', '📣',
+    '🎈', '🎀', '🎁', '📦', '🏆', '🥇', '🥈', '🥉', '📣',
     '🎶', '🎵', '🎤', '🎧', '🎹', '⚽', '🏀', '🏈', '🎣', '🎮',
-    '🧩', '🧸', '🍭', '🎨', '✈️', '🚗', '🚀', '🛥️', '🏍️', '🛴',
+    '🧩', '🧸', '🎨', '✈️', '🚗', '🚀', '🛥️', '🏍️', '🛴',
     '🛶', '⛴️', '🚁', '🚢', '🚊', '🚉', '🚏', '🚥', '🚦', '🗺️',
     '🗿', '🎭', '🖼️', '🏰', '🏯', '🌅', '🌄', '🏞️', '🌌', '🌠',
-    '🔔', '🔊', '🔉', '🔈', '🛎️', '🏴‍☠️', '🎌', '🎇', '✨', '🌌',
-    '🌈', '🥳', '👨‍🍳', '👩‍🍳', '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨', '🎖️', '🕊️',
+    '🔔', '🔊', '🔉', '🔈', '🛎️', '🎌', '🎇', '✨',
+    '🥳', '👨‍🍳', '👩‍🍳', '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨', '🎖️', '🕊️',
     '🤝', '👐', '🤲', '✋', '👋', '☝️', '👆', '👇', '👉', '👈',
-    '🤙', '🖐️', '🤚', '✋', '🦶', '🦵', '🦿', '🧘‍♂️', '🧘‍♀️', '👣',
-    '👥', '👤', '👫', '👬', '👭', '🤝', '🧑‍🤝‍🧑', '💏', '💑', '👨‍❤️‍👨',
+    '🤙', '🖐️', '🤚', '🦶', '🦵', '🦿', '🧘‍♂️', '🧘‍♀️', '👣',
+    '👥', '👤', '👫', '👬', '👭', '🧑‍🤝‍🧑', '💏', '💑', '👨‍❤️‍👨',
     '👩‍❤️‍👩', '🧑‍🤝‍🧑'
   ];
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
+  let reactCount = 0;
+  const failedEmojis = [];
+
+  try {
+    await m.react('⏳');
+  } catch (error) {
+    console.error('Error al enviar reacción inicial:', error);
+  }
 
   try {
     for (const emoji of emojis) {
       try {
         await m.react(emoji);
+        reactCount++;
       } catch (error) {
-        console.error('Error al reaccionar con emoji', emoji, error);
+        console.warn(`⚠️ No se pudo reaccionar con: ${emoji}`);
+        failedEmojis.push(emoji);
       }
-      await delay(200);
+      await delay(150);
     }
 
-    await conn.reply(m.chat, '¡Reaccioné con 200 emojis!', m);
+    let response = `✅ *¡Reacción completada!*\n`;
+    response += `📊 Emojis enviados: ${reactCount}/${emojis.length}\n`;
+    
+    if (failedEmojis.length > 0) {
+      response += `⚠️ Emojis que fallaron: ${failedEmojis.length}`;
+    }
+
+    await conn.reply(m.chat, response, m);
   } catch (error) {
-    console.error('Error en el comando reaccionar:', error);
+    console.error('❌ Error crítico en el comando reaccionar:', error);
+    
+    let errorMsg = `❌ *Hubo un error con la reacción*\n`;
+    errorMsg += `✅ Emojis exitosos: ${reactCount}/${emojis.length}\n`;
+    
+    if (error.message.includes('timeout')) {
+      errorMsg += '⏱️ Tiempo de espera agotado';
+    } else if (error.message.includes('rate')) {
+      errorMsg += '🚫 Demasiadas reacciones muy rápido';
+    } else {
+      errorMsg += `Error: ${error.message.substring(0, 50)}`;
+    }
+
     try {
-      await m.react('✖️');
-    } catch (innerError) {
-      console.error('No se pudo enviar la reacción de error:', innerError);
-      await conn.reply(m.chat, 'No pude reaccionar correctamente.', m);
+      await conn.reply(m.chat, errorMsg, m);
+    } catch (replyError) {
+      console.error('No se pudo enviar mensaje de error:', replyError);
     }
   }
 };
 
-handler.command = ['reaccionar', 'reacc']; 
+handler.help = ['reaccionar', 'reacc'];
+handler.command = ['reaccionar', 'reacc'];
 
 export default handler;
