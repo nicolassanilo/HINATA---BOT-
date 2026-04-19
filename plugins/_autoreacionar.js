@@ -81,6 +81,11 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner }) {
     console.log("Reaccionado con:", emojiToReact);
   } catch (err) {
     console.error("Error al reaccionar:", err);
+    try {
+      await conn.reply(m.chat, 'No pude reaccionar, pero estoy atento.', m);
+    } catch (replyError) {
+      console.error('Error al notificar fallo de reacción:', replyError);
+    }
   }
 
   return true;

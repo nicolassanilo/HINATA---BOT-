@@ -7,16 +7,32 @@ export const command = '.creater';
 
 export async function run(sock, m) {
     const chatId = m.key.remoteJid;
+    const whatsappNumber = '5492604035392';
+    const displayName = 'Creador de HINATA - BOT';
+    const whatsappLink = `https://wa.me/${whatsappNumber}`;
 
     const creatorMessage = `*¡Hola! Soy HINATA - BOT* 🤖
 
-Fui creada por *santiyt65*. Puedes ver su perfil de GitHub aquí:
- perfil de GITHUB : https://github.com/santiyt65
+Fui creada por *santiyt65*.
 
-Si te gusta este bot, ¡considera darle una estrella al repositorio! 🌟
- Repositorio del Bot: https://github.com/santiyt65/HINATA---BOT-
+Puedes contactarme por WhatsApp aquí:
+${whatsappLink}
+
+También puedes ver el perfil de GitHub del creador:
+https://github.com/santiyt65
+
+Repositorio del bot:
+https://github.com/santiyt65/HINATA---BOT-
+
+*Número oficial de WhatsApp:* +54 9 260 403-5392
 
 ¡Gracias por tu apoyo!`;
 
-    await sock.sendMessage(chatId, { text: creatorMessage }, { quoted: m });
+    try {
+        await sock.sendContact(chatId, [[whatsappNumber, displayName]], m);
+        await sock.sendMessage(chatId, { text: creatorMessage }, { quoted: m });
+    } catch (error) {
+        console.error('Error al enviar el contacto del creador:', error);
+        await sock.sendMessage(chatId, { text: creatorMessage }, { quoted: m });
+    }
 }
