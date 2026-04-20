@@ -17,26 +17,23 @@ let handler = async (m, { conn }) => {
 
     let randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
-    if (m.isGroup) {
-        let videos = [
-            'https://qu.ax/ZVcM.mp4', 
-            'https://qu.ax/tCblW.mp4', 
-            'https://qu.ax/kGzZr.mp4',
-            'https://qu.ax/iioMV.mp4',
-            'https://qu.ax/JgSvx.mp4',
-            'https://qu.ax/dvrKi.mp4',
-            'https://qu.ax/TZuhK.mp4'
-        ];
+    let videos = [
+        'https://qu.ax/ZVcM.mp4', 
+        'https://qu.ax/tCblW.mp4', 
+        'https://qu.ax/kGzZr.mp4',
+        'https://qu.ax/iioMV.mp4',
+        'https://qu.ax/JgSvx.mp4',
+        'https://qu.ax/dvrKi.mp4',
+        'https://qu.ax/TZuhK.mp4'
+    ];
 
-        const video = videos[Math.floor(Math.random() * videos.length)];
+    const video = videos[Math.floor(Math.random() * videos.length)];
 
-        conn.sendMessage(m.chat, { video: { url: video }, gifPlayback: true, caption: randomMessage }, { quoted: m });
-    }
+    conn.sendMessage(m.chat, { video: { url: video }, gifPlayback: true, caption: randomMessage }, { quoted: m });
 }
 
 handler.help = ['dias/days'];
 handler.tags = ['grupo'];
 handler.command = ['dias', 'dia', 'days'];
-handler.group = true;
 
 export default handler;

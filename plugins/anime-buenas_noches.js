@@ -17,27 +17,24 @@ let handler = async (m, { conn }) => {
 
     let randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
-    if (m.isGroup) {
-        const videos = [
-            'https://files.catbox.moe/0n2bf5.mp4',
-            'https://files.catbox.moe/zua131.mp4',
-            'https://files.catbox.moe/0im4vk.mp4',
-            'https://files.catbox.moe/9cm0x9.mp4',
-            'https://files.catbox.moe/7kxjhv.mp4',
-            'https://files.catbox.moe/id09sr.mp4',
-            'https://files.catbox.moe/3kyhf0.mp4',
-            'https://files.catbox.moe/4qokmi.mp4'
-        ];
-     
-        const video = videos[Math.floor(Math.random() * videos.length)];
+    const videos = [
+        'https://files.catbox.moe/0n2bf5.mp4',
+        'https://files.catbox.moe/zua131.mp4',
+        'https://files.catbox.moe/0im4vk.mp4',
+        'https://files.catbox.moe/9cm0x9.mp4',
+        'https://files.catbox.moe/7kxjhv.mp4',
+        'https://files.catbox.moe/id09sr.mp4',
+        'https://files.catbox.moe/3kyhf0.mp4',
+        'https://files.catbox.moe/4qokmi.mp4'
+    ];
 
-        conn.sendMessage(m.chat, { video: { url: video }, gifPlayback: true, caption: randomMessage }, { quoted: m });
-    }
+    const video = videos[Math.floor(Math.random() * videos.length)];
+
+    conn.sendMessage(m.chat, { video: { url: video }, gifPlayback: true, caption: randomMessage }, { quoted: m });
 }
 
 handler.help = ['nights/noches'];
 handler.tags = ['grupo'];
 handler.command = ['nights', 'noche', 'noches'];
-handler.group = true;
 
 export default handler;

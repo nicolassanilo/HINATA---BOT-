@@ -48,28 +48,25 @@ export async function run(sock, m) {
 
 ╔═══🎭 ACCIONES ANIME ═══╗
 ║
-║ 👊 *Agresivas:*
-║ • *.pegar* @usuario
-║ • *.patada* @usuario
-║ • *.morder* @usuario
+║ � *Emociones Negativas:*
+║ • *.angry* / *.enojado*
+║ • *.cry* / *.llorar*
+║ • *.bored* / *.aburrido*
+║
+║ 😊 *Emociones Positivas:*
+║ • *.blush* / *.sonrojarse*
+║ • *.bleh* / *.lengua*
+║ • *.dance* / *.bailar*
 ║
 ║ 💕 *Cariñosas:*
-║ • *.abrazar* @usuario
-║ • *.besar* @usuario
-║ • *.acariciar* @usuario
-║ • *.alimentar* @usuario
+║ • *.cuddle* / *.acurrucarse*
+║ • *.bite* / *.morder*
+║ • *.cafe* / *.coffe*
+║ • *.bath* / *.bañarse*
 ║
-║ 🎪 *Interactivas:*
-║ • *.picar* @usuario
-║ • *.cosquillas* @usuario
-║ • *.saludar* @usuario
-║ • *.bailar* @usuario
-║
-║ 😊 *Emocionales:*
-║ • *.llorar*
-║ • *.reir*
-║ • *.sonrojar*
-║ • *.dormir*
+║ 🌙 *Saludos del Día:*
+║ • *.noche* / *.noches* / *.nights*
+║ • *.dia* / *.dias* / *.days*
 ║
 ╚════════════════════╝
 
@@ -173,7 +170,7 @@ export async function run(sock, m) {
 
 ╔══════════════════════╗
 ║   💡 Usa .help <comando> para más info
-║   🎮 Total: 40+ comandos disponibles
+║   🎮 Total: 45+ comandos disponibles
 ║   🌟 ¡Disfruta de HINATA-BOT!
 ╚══════════════════════╝
 
