@@ -11,6 +11,7 @@
   "googleSearchApiKey": "AIzaSyB4ZexN_86YJcVqMBKvyhPKNZYD2NXPZv4",
   "googleCseId": "44404c6f7af7c418a",
   
+  "maxVideoSizeMB": 50,
   "cooldowns": {
     "perUser": 10,
     "groupBurstLimit": 20,

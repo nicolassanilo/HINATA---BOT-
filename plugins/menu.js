@@ -38,6 +38,10 @@ export async function run(sock, m) {
 ║    └ Descarga música (MP3, WAV, etc.)
 ║    └ YouTube, SoundCloud, TikTok
 ║
+║ 🎥 *.youtube* <URL>
+║    └ Descarga videos de YouTube
+║    └ Con límite de tamaño (50 MB)
+║
 ║ 🖼️ *.sticker*
 ║    └ Crea stickers de imagen/video
 ║
