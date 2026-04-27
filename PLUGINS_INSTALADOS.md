@@ -1,7 +1,8 @@
 # 📋 PLUGINS COMPATIBLES INSTALADOS - HINATA BOT
 
-**Total de plugins:** 137 archivos
+**Total de plugins:** 145 archivos
 **Fecha de instalación:** 2025-01-08
+**Última actualización:** 2026-04-27
 
 ---
 
@@ -159,6 +160,21 @@
 | `_templateResponse.js` | Respuestas con plantillas |
 | `_userPrem.js` | Sistema de usuarios premium |
 | `_validCommand.js` | Validación de comandos |
+
+---
+
+### 🎮 JUEGOS Y UTILIDADES - 8 plugins (NUEVO)
+
+| Comando | Descripción |
+|---------|-------------|
+| `.traducir` | Traductor de idiomas |
+| `.calculadora` | Operaciones matemáticas |
+| `.qr` | Generador de códigos QR |
+| `.encuesta` | Crear encuestas en grupos |
+| `.dados` | Tirar dados aleatorios |
+| `.trabajar` | Sistema de trabajos |
+| `.rpg` | Sistema de personajes RPG |
+| `.mazmorra` | Exploración de mazmorras PvE |
 
 ---
 

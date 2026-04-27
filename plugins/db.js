@@ -67,6 +67,41 @@ export async function initDB() {
                 character_id INTEGER PRIMARY KEY,
                 user_id TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS encuestas (
+                id TEXT PRIMARY KEY,
+                chatId TEXT NOT NULL,
+                pregunta TEXT NOT NULL,
+                opciones TEXT NOT NULL,
+                votos TEXT DEFAULT '{}',
+                creador TEXT NOT NULL,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS cooldowns (
+                clave TEXT PRIMARY KEY,
+                valor TEXT NOT NULL,
+                tiempo INTEGER DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS rpg_personajes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                userId TEXT UNIQUE NOT NULL,
+                nombre TEXT,
+                clase TEXT DEFAULT 'guerrero',
+                hp INTEGER DEFAULT 100,
+                hp_max INTEGER DEFAULT 100,
+                ataque INTEGER DEFAULT 10,
+                defensa INTEGER DEFAULT 10,
+                velocidad INTEGER DEFAULT 10,
+                nivel INTEGER DEFAULT 1,
+                xp INTEGER DEFAULT 0,
+                oro INTEGER DEFAULT 100,
+                victorias INTEGER DEFAULT 0,
+                derrotas INTEGER DEFAULT 0,
+                exploraciones INTEGER DEFAULT 0,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         `);
 
         console.log('✅ Base de datos inicializada correctamente.');
