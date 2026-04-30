@@ -37,29 +37,100 @@ export async function run(sock, m, { text, command }) {
                 break;
 
             case '.depositar':
-                if (isNaN(cantidad) || cantidad <= 0) {
+                // Función mejorada para manejar diferentes formatos de cantidad
+                let cantidadDepositar = 0;
+                
+                // Si no se proporciona cantidad, mostrar opciones
+                if (!text || text.trim() === '') {
                     return await sock.sendMessage(chatId, {
-                        text: '❌ Uso correcto: .depositar <cantidad>\n\nEjemplo: .depositar 500'
+                        text: `💰 *OPCIONES DE DEPÓSITO* 💰\n\n` +
+                              `📋 *Formas de depositar:*\n\n` +
+                              `💵 **Cantidad específica:**\n` +
+                              `   .depositar 500\n` +
+                              `   .depositar 1000\n` +
+                              `   .depositar 5000\n\n` +
+                              `🎯 **Depósitos rápidos:**\n` +
+                              `   .depositar todo - Depositar todo tu saldo\n` +
+                              `   .depositar mitad - Depositar la mitad\n` +
+                              `   .depositar 25% - Depositar 25%\n` +
+                              `   .depositar 50% - Depositar 50%\n` +
+                              `   .depositar 75% - Depositar 75%\n\n` +
+                              `📊 **Tu saldo actual:** ${usuario.saldo.toLocaleString()} pts\n\n` +
+                              `💡 *Ejemplo:* .depositar 1000`
                     }, { quoted: m });
                 }
-
-                if (cantidad > usuario.saldo) {
+                
+                // Procesar diferentes tipos de cantidad
+                const textoLower = text.toLowerCase().trim();
+                
+                if (textoLower === 'todo' || textoLower === 'all') {
+                    cantidadDepositar = usuario.saldo;
+                } else if (textoLower === 'mitad' || textoLower === 'half') {
+                    cantidadDepositar = Math.floor(usuario.saldo / 2);
+                } else if (textoLower.includes('%')) {
+                    // Depósito porcentual
+                    const porcentaje = parseFloat(textoLower.replace('%', ''));
+                    if (isNaN(porcentaje) || porcentaje <= 0 || porcentaje > 100) {
+                        return await sock.sendMessage(chatId, {
+                            text: '❌ Porcentaje inválido. Usa un número entre 1 y 100.\n\nEjemplo: .depositar 50%'
+                        }, { quoted: m });
+                    }
+                    cantidadDepositar = Math.floor(usuario.saldo * (porcentaje / 100));
+                } else if (textoLower === 'mitad') {
+                    cantidadDepositar = Math.floor(usuario.saldo / 2);
+                } else if (textoLower === 'quarter' || textoLower === 'cuarto') {
+                    cantidadDepositar = Math.floor(usuario.saldo / 4);
+                } else {
+                    // Cantidad numérica específica
+                    cantidadDepositar = parseInt(text);
+                    
+                    if (isNaN(cantidadDepositar) || cantidadDepositar <= 0) {
+                        return await sock.sendMessage(chatId, {
+                            text: '❌ Uso correcto: .depositar <cantidad>\n\n💡 **Opciones disponibles:**\n• .depositar 500\n• .depositar todo\n• .depositar 50%\n• .depositar mitad\n\n📊 Tu saldo: ' + usuario.saldo.toLocaleString() + ' pts'
+                        }, { quoted: m });
+                    }
+                }
+                
+                // Validaciones finales
+                if (cantidadDepositar <= 0) {
                     return await sock.sendMessage(chatId, {
-                        text: `❌ No tienes suficiente dinero en mano.\n💵 Tienes: ${usuario.saldo.toLocaleString()} puntos`
+                        text: '❌ La cantidad a depositar debe ser mayor a 0.\n\n💡 Tu saldo actual: ' + usuario.saldo.toLocaleString() + ' pts'
                     }, { quoted: m });
                 }
-
-                const nuevoSaldoDepositar = usuario.saldo - cantidad;
-                const nuevoBancoDepositar = usuario.banco + cantidad;
+                
+                if (cantidadDepositar > usuario.saldo) {
+                    return await sock.sendMessage(chatId, {
+                        text: `❌ No tienes suficiente dinero en mano.\n💵 Saldo disponible: ${usuario.saldo.toLocaleString()} pts\n💰 Intentas depositar: ${cantidadDepositar.toLocaleString()} pts`
+                    }, { quoted: m });
+                }
+                
+                // Realizar depósito
+                const nuevoSaldoDepositar = usuario.saldo - cantidadDepositar;
+                const nuevoBancoDepositar = usuario.banco + cantidadDepositar;
+                const porcentajeDepositado = ((cantidadDepositar / (usuario.saldo + cantidadDepositar)) * 100).toFixed(1);
 
                 await db.run('UPDATE usuarios SET saldo = ?, banco = ? WHERE chatId = ?',
                     [nuevoSaldoDepositar, nuevoBancoDepositar, userId]);
 
+                // Mensaje de éxito con formato mejorado
+                let mensajeTipo = '';
+                if (textoLower === 'todo' || textoLower === 'all') {
+                    mensajeTipo = '💎 *DEPÓSITO COMPLETO*';
+                } else if (textoLower.includes('%')) {
+                    mensajeTipo = `📊 *DEPÓSITO PORCENTUAL (${textoLower})*`;
+                } else if (textoLower === 'mitad' || textoLower === 'half') {
+                    mensajeTipo = '⚖️ *DEPÓSITO DE LA MITAD*';
+                } else {
+                    mensajeTipo = '💰 *DEPÓSITO EXITOSO*';
+                }
+
                 await sock.sendMessage(chatId, {
-                    text: `✅ *DEPÓSITO EXITOSO* ✅\n\n` +
-                          `💰 Depositaste: ${cantidad.toLocaleString()} puntos\n` +
-                          `💵 Saldo actual: ${nuevoSaldoDepositar.toLocaleString()} puntos\n` +
-                          `🏦 Banco actual: ${nuevoBancoDepositar.toLocaleString()} puntos`
+                    text: `${mensajeTipo} ${mensajeTipo.includes('COMPLETO') ? '💎' : '✅'}\n\n` +
+                          `💰 Cantidad depositada: ${cantidadDepositar.toLocaleString()} pts\n` +
+                          `📊 Porcentaje del total: ${porcentajeDepositado}%\n` +
+                          `💵 Saldo actual: ${nuevoSaldoDepositar.toLocaleString()} pts\n` +
+                          `🏦 Banco actual: ${nuevoBancoDepositar.toLocaleString()} pts\n\n` +
+                          `💎 Total acumulado: ${(nuevoSaldoDepositar + nuevoBancoDepositar).toLocaleString()} pts`
                 }, { quoted: m });
                 break;
 

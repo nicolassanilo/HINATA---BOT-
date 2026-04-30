@@ -1,10 +1,26 @@
 /**
- * @file Plugin Acciones - Envía GIFs de anime con acciones interactivas
- * @version 3.0.0
- * @description Usa la API de OtakuGIFs para GIFs de anime de alta calidad
+ * @file Plugin Acciones v2.0 - Sistema robusto de acciones interactivas
+ * @description Mejorado con validaciones robustas, manejo de errores y seguridad
+ * @version 2.0.0
  */
 
 import axios from 'axios';
+
+// Configuración de seguridad y límites
+const CONFIG = {
+  timeout: 10000,
+  maxFileSize: 10 * 1024 * 1024, // 10MB
+  maxRetries: 3,
+  retryDelay: 1000,
+  rateLimitDelay: 500,
+  maxConcurrentRequests: 2
+};
+
+// Estado global para control de concurrencia
+const requestState = {
+  active: 0,
+  lastRequest: 0
+};
 
 export const command = [
   '.pegar', '.slap',
@@ -31,31 +47,33 @@ export const command = [
 ];
 
 export const help = `
-Envía GIFs de anime con acciones interactivas 🎭
+🎭 *ACCIONES INTERACTIVAS v2.0* 🎭
 
-*Acciones disponibles:*
+*Sistema mejorado con seguridad y validaciones robustas*
 
-*Agresivas:* 👊
+*📋 Categorías de Acciones:*
+
+*👊 Acciones Agresivas:*
   • ".pegar" / ".punch" @usuario
   • ".bofetada" / ".slap" @usuario
-  • ".patada" / ".kick" @usuario (Usa 'punch' como alternativa)
+  • ".patada" / ".kick" @usuario
   • ".morder" / ".bite" @usuario
 
-*Cariñosas:* 💕
+*💕 Acciones Cariñosas:*
   • ".abrazar" / ".hug" @usuario
   • ".besar" / ".kiss" @usuario
   • ".acariciar" / ".pat" @usuario
   • ".abrazar2" / ".cuddle" @usuario
   • ".alimentar" / ".feed" @usuario
 
-*Interactivas:* 🎪
+*🎪 Acciones Interactivas:*
   • ".picar" / ".poke" @usuario
   • ".cosquillas" / ".tickle" @usuario
   • ".saludar" / ".wave" @usuario
   • ".bailar" / ".dance" @usuario
   • ".guiñar" / ".wink" @usuario
 
-*Emocionales:* 😊
+*😊 Acciones Emocionales:*
   • ".sonrojar" / ".blush"
   • ".sonreir" / ".smile"
   • ".llorar" / ".cry"
@@ -63,19 +81,24 @@ Envía GIFs de anime con acciones interactivas 🎭
   • ".dormir" / ".sleep"
   • ".pensar" / ".think"
 
-*Uso:*
-  Menciona a un usuario para realizar la acción
-  
-*Ejemplos:*
-  - ".pegar @usuario" - Le pega a alguien
-  - ".abrazar @usuario" - Abraza a alguien
-  - ".besar @usuario" - Besa a alguien
-  - ".llorar" - Llora (sin mención)
+*🔧 Características de Seguridad:*
+  ✅ Validación de entradas
+  ✅ Control de concurrencia
+  ✅ Límites de tamaño
+  ✅ Reintentos automáticos
+  ✅ Manejo robusto de errores
 
-*Nota:* Usa la API de OtakuGIFs - GIFs de alta calidad
+*💡 Uso:*
+  Menciona a un usuario para acciones interactivas
+  Las acciones emocionales no requieren mención
+
+*⚠️ Limites:*
+  • Máximo 10MB por GIF
+  • 3 reintentos automáticos
+  • Control de rate limiting
 `;
 
-// Mapeo de comandos a endpoints de OtakuGIFs API
+// Mapeo mejorado de comandos a acciones
 const ACCIONES_MAP = {
   '.pegar': 'punch',
   '.punch': 'punch',
@@ -89,8 +112,8 @@ const ACCIONES_MAP = {
   '.pat': 'pat',
   '.morder': 'bite',
   '.bite': 'bite',
-  '.alimentar': 'nom', // 'nom' es lo más cercano a 'feed'
-  '.feed': 'nom',
+  '.alimentar': 'feed',
+  '.feed': 'feed',
   '.sonrojar': 'blush',
   '.blush': 'blush',
   '.sonreir': 'smile',
@@ -105,200 +128,332 @@ const ACCIONES_MAP = {
   '.laugh': 'laugh',
   '.dormir': 'sleep',
   '.sleep': 'sleep',
-  '.pensar': 'confused', // 'confused' es lo más cercano a 'think'
-  '.think': 'confused',
+  '.pensar': 'think',
+  '.think': 'think',
   '.guiñar': 'wink',
   '.wink': 'wink',
   '.abrazar2': 'cuddle',
   '.cuddle': 'cuddle',
-  '.patada': 'punch', // No hay 'kick', se usa 'punch'
-  '.kick': 'punch',
+  '.patada': 'kick',
+  '.kick': 'kick',
   '.picar': 'poke',
   '.poke': 'poke',
   '.cosquillas': 'tickle',
   '.tickle': 'tickle'
 };
 
-// Textos para cada acción
+// Textos mejorados para cada acción
 const TEXTOS_ACCIONES = {
-  'punch': ['punched', 'gave a punch to', 'hit'],
-  'slap': ['slapped', 'gave a slap to'],
-  'hug': ['hugged', 'gave a hug to', 'is hugging'],
-  'kiss': ['kissed', 'gave a kiss to', 'is kissing'],
-  'pat': ['patted', 'gave pats to', 'gave headpats to'],
-  'bite': ['bit', 'gave a bite to', 'is biting'],
-  'nom': ['fed', 'gave food to', 'is feeding'],
-  'blush': ['blushed', 'is blushing', 'turned red'],
-  'smile': ['smiled', 'is smiling', 'has a smile'],
-  'wave': ['waved at', 'made signs to', 'is waving at'],
-  'dance': ['danced with', 'is dancing with', 'invited to dance'],
-  'cry': ['is crying', 'cried', 'started crying'],
-  'laugh': ['laughed', 'is laughing', 'burst out laughing'],
-  'sleep': ['fell asleep', 'is sleeping', 'went to sleep'],
-  'confused': ['is thinking', 'pondered', 'got confused'],
-  'wink': ['winked at', 'gave a wink to', 'winked'],
-  'cuddle': ['cuddled', 'cuddled with', 'is cuddling'],
-  'poke': ['poked', 'gave a poke to', 'is annoying'],
-  'tickle': ['tickled', 'is tickling', 'annoyed']
+  'punch': ['le dio un puñetazo a', 'golpeó fuertemente a', 'atacó a'],
+  'slap': ['le dio una bofetada a', 'abofeteó a', 'reventó a'],
+  'hug': ['abrazó tiernamente a', 'dio un abrazo a', 'acurrucó a'],
+  'kiss': ['besó dulcemente a', 'dio un beso a', 'besó apasionadamente a'],
+  'pat': ['acarició la cabeza de', 'dio palmaditas a', 'consoló a'],
+  'bite': ['mordió a', 'dio un mordisco a', 'nibbled on'],
+  'feed': ['alimentó a', 'dio comida a', 'compartió comida con'],
+  'blush': ['se sonrojó', 'puso rojo como un tomate', 'se ruborizó'],
+  'smile': ['sonrió felizmente', 'mostró una sonrisa', 'brilló con alegría'],
+  'wave': ['saludó a', 'hizo señas a', 'dijo hola a'],
+  'dance': ['bailó con', 'invitó a bailar a', 'se movió al ritmo con'],
+  'cry': ['empezó a llorar', 'lloró tristemente', 'derramó lágrimas'],
+  'laugh': ['se rio a carcajadas', 'explotó en risas', 'rió divertidamente'],
+  'sleep': ['se quedó dormido', 'se durmió pacíficamente', 'cayó en un sueño profundo'],
+  'think': ['está pensando', 'se puso a reflexionar', 'meditó profundamente'],
+  'wink': ['le guiñó un ojo a', 'hizo un guiño a', 'parpadeó coquetamente a'],
+  'cuddle': ['se acurrucó con', 'se abrazó tiernamente con', 'se acurrucó junto a'],
+  'kick': ['le dio una patada a', 'pateó a', 'lanzó una patada a'],
+  'poke': ['picó a', 'dio un toque a', 'molesto a'],
+  'tickle': ['hizo cosquillas a', 'hizo reír a', 'molestó juguetonamente a']
 };
 
-// Función para obtener GIF de múltiples APIs
-async function obtenerGif(action) {
-  const apis = [
-    {
-      nombre: 'nekobot',
-      obtener: async () => {
-        try {
-          // Mapeo de acciones a tipos de imagen en nekobot
-          const nekoImageTypes = {
-            'punch': 'neko',
-            'slap': 'neko',
-            'hug': 'neko',
-            'kiss': 'neko',
-            'pat': 'neko',
-            'bite': 'neko',
-            'nom': 'neko',
-            'blush': 'neko',
-            'smile': 'neko',
-            'wave': 'neko',
-            'dance': 'neko',
-            'cry': 'neko',
-            'laugh': 'neko',
-            'sleep': 'neko',
-            'confused': 'neko',
-            'wink': 'neko',
-            'cuddle': 'neko',
-            'poke': 'neko',
-            'tickle': 'neko'
-          };
-          
-          const imageType = nekoImageTypes[action] || 'neko';
-          const url = `https://nekobot.xyz/api/image?type=${imageType}`;
-          const response = await axios.get(url, { timeout: 8000 });
-          
-          if (response.data && response.data.image_url) {
-            return response.data.image_url;
-          }
-          return null;
-        } catch (error) {
-          console.error('Error al obtener imagen de NekoBot:', error.message);
-          return null;
-        }
-      }
+// APIs mejoradas con fallback
+const APIS_CONFIG = [
+  {
+    name: 'waifu.pics',
+    baseUrl: 'https://api.waifu.pics/sfw',
+    endpoints: {
+      'hug': 'hug',
+      'pat': 'pat',
+      'slap': 'slap',
+      'poke': 'poke',
+      'neko': 'neko',
+      'bite': 'bite',
+      'blush': 'blush',
+      'smile': 'smile',
+      'wave': 'wave',
+      'wink': 'wink'
     },
-    {
-      nombre: 'otakugifs',
-      obtener: async () => {
-        try {
-          const url = `https://api.otakugifs.xyz/gif/allreactions`;
-          const response = await axios.get(url, { timeout: 8000 });
-          
-          if (response.data && response.data.url) {
-            return response.data.url;
+    getImageUrl: (data) => data.url
+  },
+  {
+    name: 'nekos.life',
+    baseUrl: 'https://nekos.life/api/v2',
+    endpoints: {
+      'hug': 'hug',
+      'pat': 'pat',
+      'slap': 'slap',
+      'kiss': 'kiss',
+      'cuddle': 'cuddle',
+      'feed': 'feed',
+      'tickle': 'tickle',
+      'poke': 'poke',
+      'smug': 'smug',
+      'baka': 'baka'
+    },
+    getImageUrl: (data) => data.url
+  },
+  {
+    name: 'some-random-api',
+    baseUrl: 'https://some-random-api.com/animu',
+    endpoints: {
+      'hug': 'hug',
+      'pat': 'pat',
+      'wink': 'wink',
+      'pat': 'pat',
+      'slap': 'slap'
+    },
+    getImageUrl: (data) => data.link
+  }
+];
+
+// Validación de entrada robusta
+function validarEntrada(command, mentionedJid) {
+  const errores = [];
+  
+  // Validar comando
+  if (!command || typeof command !== 'string') {
+    errores.push('Comando inválido o nulo');
+  }
+  
+  if (!ACCIONES_MAP[command]) {
+    errores.push(`Comando no reconocido: ${command}`);
+  }
+  
+  // Validar mención si es requerida
+  const action = ACCIONES_MAP[command];
+  const accionesSinMencion = ['blush', 'smile', 'cry', 'laugh', 'sleep', 'think'];
+  
+  if (!accionesSinMencion.includes(action) && !mentionedJid) {
+    errores.push('Esta acción requiere mencionar a un usuario');
+  }
+  
+  // Validar que no se mencione a uno mismo
+  if (mentionedJid && mentionedJid === command?.participant) {
+    errores.push('No puedes realizar esta acción sobre ti mismo');
+  }
+  
+  return {
+    isValid: errores.length === 0,
+    errores
+  };
+}
+
+// Control de concurrencia
+function checkConcurrency() {
+  const now = Date.now();
+  
+  if (requestState.active >= CONFIG.maxConcurrentRequests) {
+    return false;
+  }
+  
+  if (now - requestState.lastRequest < CONFIG.rateLimitDelay) {
+    return false;
+  }
+  
+  requestState.active++;
+  requestState.lastRequest = now;
+  return true;
+}
+
+function releaseConcurrency() {
+  if (requestState.active > 0) {
+    requestState.active--;
+  }
+}
+
+// Obtener imagen con reintentos y validación
+async function obtenerImagenConRetries(action, retries = CONFIG.maxRetries) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    for (const api of APIS_CONFIG) {
+      try {
+        console.log(`📡 Intentando API ${api.name} (intentos: ${attempt}/${retries})`);
+        
+        // Verificar si la API soporta la acción
+        const endpoint = api.endpoints[action] || 'hug'; // Fallback a 'hug'
+        const url = `${api.baseUrl}/${endpoint}`;
+        
+        const response = await axios.get(url, {
+          timeout: CONFIG.timeout,
+          headers: {
+            'User-Agent': 'HINATA-BOT/2.0',
+            'Accept': 'application/json'
           }
-          return null;
-        } catch (error) {
-          console.error('Error al obtener GIF de OtakuGIFs:', error.message);
-          return null;
+        });
+        
+        if (response.data && api.getImageUrl(response.data)) {
+          const imageUrl = api.getImageUrl(response.data);
+          
+          // Validar URL
+          if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+            console.log(`✅ Imagen obtenida desde ${api.name}: ${imageUrl}`);
+            return imageUrl;
+          }
+        }
+      } catch (error) {
+        console.warn(`❌ Error con ${api.name} (intento ${attempt}):`, error.message);
+        
+        // Si es error de red, esperar antes de reintentar
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          await new Promise(resolve => setTimeout(resolve, CONFIG.retryDelay * attempt));
         }
       }
-    }
-  ];
-
-  // Intentar cada API en orden
-  for (const api of apis) {
-    try {
-      console.log(`📡 Intentando obtener imagen/GIF desde ${api.nombre}...`);
-      const url = await api.obtener();
-      if (url) {
-        console.log(`✅ Imagen obtenida desde ${api.nombre}`);
-        return url;
-      }
-    } catch (error) {
-      console.error(`❌ Error con ${api.nombre}:`, error.message);
-      continue;
     }
   }
   
-  console.error('⚠️ No se pudo obtener imagen de ninguna API');
-  return null;
+  throw new Error('No se pudo obtener imagen de ninguna API después de todos los intentos');
 }
 
+// Descargar y validar archivo
+async function descargarYValidarArchivo(url) {
+  try {
+    console.log(`📥 Descargando archivo: ${url}`);
+    
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: CONFIG.timeout * 2,
+      maxContentLength: CONFIG.maxFileSize,
+      headers: {
+        'User-Agent': 'HINATA-BOT/2.0'
+      }
+    });
+    
+    // Validar tamaño
+    if (response.data.byteLength > CONFIG.maxFileSize) {
+      throw new Error(`Archivo demasiado grande: ${response.data.byteLength} bytes`);
+    }
+    
+    // Validar que sea un archivo de imagen válido
+    const buffer = Buffer.from(response.data);
+    
+    // Validar headers de imagen
+    const isGif = buffer.toString('hex', 0, 6) === '474946383961' || buffer.toString('hex', 0, 6) === '474946383761';
+    const isWebp = buffer.toString('hex', 0, 8) === '52494646' && buffer.toString('ascii', 8, 12) === 'WEBP';
+    const isJpeg = buffer.toString('hex', 0, 4) === 'ffd8';
+    const isPng = buffer.toString('hex', 0, 8) === '89504e470d0a1a0a';
+    
+    if (!isGif && !isWebp && !isJpeg && !isPng) {
+      throw new Error('El archivo no es un formato de imagen válido');
+    }
+    
+    console.log(`✅ Archivo validado: ${buffer.length} bytes`);
+    return buffer;
+    
+  } catch (error) {
+    console.error('❌ Error al descargar/validar archivo:', error.message);
+    throw error;
+  }
+}
+
+// Función principal mejorada
 export async function run(sock, m, { command }) {
   const chatId = m.key.remoteJid;
   const senderId = m.key.participant || m.key.remoteJid;
-  const senderName = senderId.split('@')[0];
-
+  const senderName = m.pushName || senderId.split('@')[0];
+  
+  let concurrencyReleased = false;
+  
   try {
-    // Obtener usuario mencionado
-    const mentionedJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-    
-    // Obtener acción de la API
-    const action = ACCIONES_MAP[command];
-    
-    if (!action) {
+    // Control de concurrencia
+    if (!checkConcurrency()) {
       return await sock.sendMessage(chatId, {
-        text: '❌ Acción no reconocida. Usa `.help acciones` para ver las acciones disponibles.'
+        text: '⏱️ *Demasiadas solicitudes simultáneas*\n\nPor favor, espera un momento y vuelve a intentar.'
       }, { quoted: m });
     }
-
-    // Obtener textos posibles para la acción
+    
+    // Validar entrada
+    const mentionedJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    const validacion = validarEntrada(command, mentionedJid);
+    
+    if (!validacion.isValid) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ *Error de validación*\n\n${validacion.errores.join('\n')}\n\n💡 Usa \`.help acciones\` para ver la ayuda.`
+      }, { quoted: m });
+    }
+    
+    // Obtener acción
+    const action = ACCIONES_MAP[command];
     const textosAccion = TEXTOS_ACCIONES[action] || ['realizó una acción con'];
     const textoAleatorio = textosAccion[Math.floor(Math.random() * textosAccion.length)];
-
+    
     // Construir mensaje
     let mensaje = '';
     let mentions = [senderId];
-
-    // Acciones que no requieren mención (emocionales)
-    const accionesSinMencion = ['blush', 'smile', 'cry', 'laugh', 'sleep', 'confused'];
-
+    
+    const accionesSinMencion = ['blush', 'smile', 'cry', 'laugh', 'sleep', 'think'];
+    
     if (mentionedJid && !accionesSinMencion.includes(action)) {
-      const targetName = mentionedJid.split('@')[0];
-      mensaje = `*@${senderName}* ${textoAleatorio} *@${targetName}*! 💫`;
+      const targetName = m.message?.extendedTextMessage?.contextInfo?.participant?.split('@')[0] || mentionedJid.split('@')[0];
+      mensaje = `*@${senderName}* ${textoAleatorio} *@${targetName}* 💫`;
       mentions.push(mentionedJid);
     } else {
-      // Mensaje sin mención
-      mensaje = `*@${senderName}* ${textoAleatorio}! 💫`;
+      mensaje = `*@${senderName}* ${textoAleatorio} 💫`;
     }
-
-    // Buscar GIF
-    const gifUrl = await obtenerGif(action);
-
-    if (!gifUrl) {
-      return await sock.sendMessage(chatId, {
-        text: `❌ No se pudo obtener el GIF. Intenta nuevamente o usa otra acción.`
-      }, { quoted: m });
-    }
-
-    // Descargar el GIF
-    const gifResponse = await axios.get(gifUrl, {
-      responseType: 'arraybuffer',
-      timeout: 30000,
-      maxContentLength: 50 * 1024 * 1024 // 50 MB máximo
-    });
-
-    const buffer = Buffer.from(gifResponse.data);
-
-    // Enviar GIF con mensaje
+    
+    // Obtener imagen con reintentos
+    const imageUrl = await obtenerImagenConRetries(action);
+    
+    // Descargar y validar archivo
+    const buffer = await descargarYValidarArchivo(imageUrl);
+    
+    // Enviar mensaje de procesamiento
+    await m.react('⏳');
+    
+    // Enviar GIF/imagen
     await sock.sendMessage(chatId, {
-      video: buffer,
-      gifPlayback: true,
+      image: buffer,
       caption: mensaje,
-      mentions: mentions
+      mentions: mentions,
+      gifPlayback: imageUrl.includes('.gif') || buffer.toString('hex', 0, 6) === '474946'
     }, { quoted: m });
-
+    
+    // Reacción de éxito
+    await m.react('✅');
+    
   } catch (error) {
-    console.error('Error en comando de acción:', error);
+    console.error('❌ Error en comando de acción:', error);
     
-    let errorMsg = '❌ Ocurrió un error al procesar la acción.';
+    // Reacción de error
+    try { await m.react('❌'); } catch {}
     
-    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-      errorMsg += '\n⏱️ Tiempo de espera agotado. Intenta nuevamente.';
-    } else if (error.response && error.response.status === 404) {
-      errorMsg += '\n🔍 Acción no disponible en este momento.';
+    // Mensaje de error específico
+    let errorMsg = '❌ *Error al procesar la acción*\n\n';
+    
+    if (error.message.includes('Archivo demasiado grande')) {
+      errorMsg += '📁 El archivo es demasiado grande (máximo 10MB)\n';
+    } else if (error.message.includes('formato de imagen válido')) {
+      errorMsg += '🖼️ El archivo no es un formato de imagen válido\n';
+    } else if (error.message.includes('No se pudo obtener imagen')) {
+      errorMsg += '🌐 No se pudo obtener imagen de las APIs\n';
+    } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      errorMsg += '⏱️ Tiempo de espera agotado\n';
+    } else if (error.code === 'ECONNRESET') {
+      errorMsg += '🔌 Conexión interrumpida\n';
+    } else {
+      errorMsg += `💻 Error: ${error.message.substring(0, 100)}\n`;
     }
+    
+    errorMsg += '\n💡 *Soluciones posibles:*';
+    errorMsg += '\n• Intenta con otra acción';
+    errorMsg += '\n• Espera unos segundos y vuelve a intentar';
+    errorMsg += '\n• Verifica tu conexión a internet';
     
     await sock.sendMessage(chatId, { text: errorMsg }, { quoted: m });
+    
+  } finally {
+    // Liberar concurrencia
+    if (!concurrencyReleased) {
+      releaseConcurrency();
+      concurrencyReleased = true;
+    }
   }
 }
