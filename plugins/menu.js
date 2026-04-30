@@ -27,8 +27,8 @@ export async function run(sock, m) {
 ║ 📌 *.pinterest* <texto>
 ║    └ Busca imágenes en Pinterest
 ║
-║ 🖼️ *.papel* <texto>
-║    └ Fondos de pantalla
+║ 🖼️ *.waifu*
+║    └ Waifus aleatorios
 ║
 ╚════════════════════╝
 
@@ -47,6 +47,31 @@ export async function run(sock, m) {
 ║
 ║ 🎭 *.gif* <texto>
 ║    └ Busca y envía GIFs animados
+║
+╚════════════════════╝
+
+╔═══🤖 INTELIGENCIA ARTIFICIAL ═══╗
+║
+║ 🤖 *.ia* <pregunta>
+║    └ Chat con IA avanzada
+║
+║ 🔮 *.gemini* <pregunta>
+║    └ Gemini AI
+║
+║ 🦙 *.llama* <texto>
+║    └ Meta Llama AI
+║
+║ 💬 *.simi* / *.bot* <texto>
+║    └ Simi AI conversacional
+║
+║ 🎨 *.dalle* <descripción>
+║    └ Genera imágenes con IA
+║
+║ 🌈 *.flux* <descripción>
+║    └ Genera imágenes Flux AI
+║
+║ 📝 *.text2img* <descripción>
+║    └ Texto a imagen
 ║
 ╚════════════════════╝
 
@@ -94,6 +119,13 @@ export async function run(sock, m) {
 ║ ✂️ *.ppt* <piedra|papel|tijera>
 ║    └ Piedra, papel o tijera
 ║
+║ 🎲 *.dados* [número]
+║    └ Tira dados (d6, d20, etc.)
+║
+║ 🏰 *.mazmorra* <lugar>
+║    └ Explora mazmorras PvE
+║    └ Ej: .mazmorra bosque
+║
 ╚════════════════════╝
 
 ╔═══💰 ECONOMÍA ═══╗
@@ -116,6 +148,9 @@ export async function run(sock, m) {
 ║ ✅ *.completarmision*
 ║    └ Completa y cobra misión
 ║
+║ 💼 *.trabajar*
+║    └ Trabaja y gana dinero
+║
 ║ 🏴‍☠️ *.robar* @usuario
 ║    └ Intenta robar (2h cooldown)
 ║
@@ -137,6 +172,39 @@ export async function run(sock, m) {
 ║
 ║ ✅ *.unban* @usuario
 ║    └ Desbanea del bot (owner)
+║
+║ 📊 *.encuesta* <pregunta>
+║    └ Crea una encuesta
+║
+║ 🤡 *.payasos* [número]
+║    └ Lista payasos aleatorios
+║
+║ 💅 *.femboys* [número]
+║    └ Lista femboys aleatorios
+║
+║ 🏀 *.tomboys* [número]
+║    └ Lista tomboys aleatorios
+║
+╚════════════════════╝
+
+╔═══🛠️ HERRAMIENTAS ═══╗
+║
+║ 🧮 *.calculadora* <operación>
+║    └ Calculadora matemática
+║    └ Ej: .calc 5+5*2
+║
+║ 📱 *.qr* <texto/URL>
+║    └ Genera código QR
+║
+║ 🌐 *.traducir* <idioma> <texto>
+║    └ Traduce texto
+║    └ Idiomas: es, en, fr, de, it, pt, ja
+║
+║ 🔤 *.letra* <texto>
+║    └ Convierte a alfabeto sundanés
+║
+║ 🎮 *.stalkml* <ID>
+║    └ Stalkea perfil de ML
 ║
 ╚════════════════════╝
 
@@ -174,13 +242,13 @@ export async function run(sock, m) {
 
 ╔══════════════════════╗
 ║   💡 Usa .help <comando> para más info
-║   🎮 Total: 45+ comandos disponibles
+║   🎮 Total: 70+ comandos disponibles
 ║   🌟 ¡Disfruta de HINATA-BOT!
 ╚══════════════════════╝
 
 ╔══════════════════════╗
 ║   👨‍💻 Creado por: nicolassanilo
-║   📱 Versión: 2.0.0
+║   📱 Versión: 2.1.0
 ║   ⚡ Estado: 🟢 Online
 ╚══════════════════════╝
 `;
