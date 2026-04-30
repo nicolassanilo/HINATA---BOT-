@@ -1,4 +1,4 @@
-//Codígo creado por Destroy wa.me/584120346669
+//Código actualizado para HINATA-BOT
 
 import fs from 'fs';
 import path from 'path';
@@ -37,7 +37,6 @@ let handler = async (m, { conn, usedPrefix }) => {
     const videos = [pp, pp2, pp3, pp4, pp5, pp6];
     const video = videos[Math.floor(Math.random() * videos.length)];
     
-
     let mentions = m.mentionedJid.length > 0 ? [who] : [];
     conn.sendMessage(m.chat, { video: { url: video }, gifPlayback: true, caption: str, mentions }, { quoted: m });
 }
@@ -45,5 +44,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 handler.help = ['bite/morder [@tag]'];
 handler.tags = ['anime'];
 handler.command = ['bite','morder'];
+handler.group = true;
 
 export default handler;

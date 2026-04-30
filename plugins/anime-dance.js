@@ -1,4 +1,4 @@
-//Codígo creado por Destroy wa.me/50231458537
+//Código actualizado para HINATA-BOT
 
 import fs from 'fs';
 import path from 'path';
@@ -20,11 +20,11 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     let str;
     if (m.mentionedJid.length > 0) {
-        str = `\`${name2}\` *bailá junto con* \`${name || who}\`.`;
+        str = `\`${name2}\` *bailó junto con* \`${name || who}\`.`;
     } else if (m.quoted) {
-        str = `\`${name2}\` *esta bailando con* \`${name || who}\`.`;
+        str = `\`${name2}\` *está bailando con* \`${name || who}\`.`;
     } else {
-        str = `\`${name2}\` *suelta los pasos prohibidos.*`.trim();
+        str = `\`${name2}\` *bailó solo*`.trim();
     }
     
     let pp = 'https://qu.ax/uSfl.mp4'; 

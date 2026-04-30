@@ -1,4 +1,4 @@
-//Codígo creado por Destroy wa.me/584120346669
+//Código actualizado para HINATA-BOT
 
 import fs from 'fs';
 import path from 'path';
@@ -24,7 +24,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     } else if (m.quoted) {
         str = `\`${name2}\` *se sonrojo por* \`${name || who}\`.`;
     } else {
-        str = `\`${name2}\` *se sonrojo.*`.trim();
+        str = `\`${name2}\` *se sonrojo*`.trim();
     }
     
     let pp = 'https://telegra.ph/file/a4f925aac453cad828ef2.mp4'; 
@@ -45,5 +45,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 handler.help = ['blush/sonrojarse [@tag]'];
 handler.tags = ['anime'];
 handler.command = ['blush','sonrojarse'];
+handler.group = true;
 
 export default handler;

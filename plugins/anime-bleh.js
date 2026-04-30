@@ -1,4 +1,4 @@
-//Codígo creado por Destroy wa.me/584120346669
+//Código actualizado para HINATA-BOT
 
 import fs from 'fs';
 import path from 'path';
@@ -45,5 +45,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 handler.help = ['bleh/lengua [@tag]'];
 handler.tags = ['anime'];
 handler.command = ['bleh','lengua'];
+handler.group = true;
 
 export default handler;

@@ -1,4 +1,4 @@
-//Codígo creado por Destroy wa.me/584120346669
+//Código actualizado para HINATA-BOT
 
 import fs from 'fs';
 import path from 'path';
@@ -20,11 +20,11 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     let str;
     if (m.mentionedJid.length > 0) {
-        str = `\`${name2}\` *se acurrucó con* ${name || who}.`;
+        str = `\`${name2}\` *se acurrucó con* \`${name || who}\`.`;
     } else if (m.quoted) {
-        str = `\`${name2}\` *está acurrucándose con* ${name || who}.`;
+        str = `\`${name2}\` *está acurrucándose con* \`${name || who}\`.`;
     } else {
-        str = `\`${name2}\` *se esta acurrucando.*`.trim();
+        str = `\`${name2}\` *se está acurrucando*`.trim();
     }
     
     let pp = 'https://qu.ax/snjY.mp4'; 
