@@ -3,70 +3,80 @@
     "id": 1,
     "name": "Hinata Hyuga",
     "anime": "Naruto",
-    "image_url": "https://i.ibb.co/2jC4VFB/hinata.jpg",
+    "image_url": ["https://i.ibb.co/PZnGrw0T/HINATA.jpg",
+                  "https://i.ibb.co/Cs1yhH34/0f6410189f66d9e3b5ff32a08a04151a.jpg"],
     "price": 15000
   },
   {
     "id": 2,
     "name": "Saber",
     "anime": "Fate/stay night",
-    "image_url": "https://i.ibb.co/Vvqs5c7/saber.jpg",
+    "image_url": ["https://i.ibb.co/MqjtxY8/000d66ccfa714486e6adadaf1878d85e.jpg",
+                  "https://i.ibb.co/jvQcKPJM/963a5734aff5203a34066161e4d3f76f.jpg"],
     "price": 20000
   },
   {
     "id": 3,
     "name": "Asuna Yuuki",
     "anime": "Sword Art Online",
-    "image_url": "https://i.ibb.co/C0TPFh1/asuna.jpg",
+    "image_url": ["https://i.ibb.co/2Y3Y68mr/b9472f3443bac6abce76d32f997b8c65.jpg",
+                  "https://i.ibb.co/QRVyPfF/72d9d47f476cb6b72459dbe1b26c7356.jpg"],
     "price": 18000
   },
   {
     "id": 4,
     "name": "Mikasa Ackerman",
     "anime": "Attack on Titan",
-    "image_url": "https://i.ibb.co/JjC1y1p/mikasa.jpg",
+    "image_url": ["https://i.ibb.co/v6hyf2mk/Mikasa-Ackerman.jpg",
+                  "https://i.ibb.co/TqPK7JPk/Mikasa-Ackerman.jpg"],
     "price": 22000
   },
   {
     "id": 5,
     "name": "Rias Gremory",
     "anime": "High School DxD",
-    "image_url": "https://i.ibb.co/k5zR2d3/rias.jpg",
+    "image_url": ["https://i.ibb.co/7xsTyTFZ/Rias-Gremory-2.jpg",
+                  "https://i.ibb.co/k2Qvgt5q/Rias-Gremory.jpg"],
     "price": 25000
   },
   {
     "id": 6,
     "name": "Zero Two",
     "anime": "Darling in the Franxx",
-    "image_url": "https://i.ibb.co/C0v22v6/zero-two.jpg",
+    "image_url": ["https://i.ibb.co/cfWc4Q3/Zero-Two.jpg",
+                  "https://i.ibb.co/k6DW75Dp/Zero-Two-2.jpg"],
     "price": 28000
   },
   {
     "id": 7,
     "name": "Kurisu Makise",
     "anime": "Steins;Gate",
-    "image_url": "https://i.ibb.co/yY1h521/kurisu.jpg",
+    "image_url": ["https://i.ibb.co/23cpWrsf/Kurisu-Makise.jpg",
+                  "https://i.ibb.co/HfNJjhdc/Kurisu-Makise-2.jpg"],
     "price": 19000
   },
   {
     "id": 8,
     "name": "Megumin",
     "anime": "KonoSuba",
-    "image_url": "https://i.ibb.co/n6Qx9Mv/megumin.jpg",
+    "image_url": ["https://i.ibb.co/gZgB3pqy/Megumin-2.jpg",
+                  "https://i.ibb.co/FkRphtSt/Megumin.jpg"],
     "price": 17000
   },
   {
     "id": 9,
     "name": "Rem",
     "anime": "Re:Zero",
-    "image_url": "https://i.ibb.co/5kLzYqT/rem.jpg",
+    "image_url": ["https://i.ibb.co/S4bxmhhK/Rem-2.jpg",
+                  "https://i.ibb.co/sdWgd3jK/Rem.jpg"],
     "price": 21000
   },
   {
     "id": 10,
     "name": "Nezuko Kamado",
     "anime": "Demon Slayer",
-    "image_url": "https://i.ibb.co/G039sS2/nezuko.jpg",
+    "image_url": ["https://i.ibb.co/nNFW4wbw/Nezuko-Kamado.jpg",
+                  "https://i.ibb.co/HpCMzkQR/Nezuko-Kamado-2.jpg"],
     "price": 23000
   }
 ]
