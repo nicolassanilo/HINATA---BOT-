@@ -84,8 +84,15 @@ function isOwner(senderId, config) {
         const ownerJidWithoutSuffix = normalizedOwnerJid.replace('@s.whatsapp.net', '');
         console.log(`[RELOAD DEBUG] OwnerJid sin suffix: ${ownerJidWithoutSuffix}`);
         
+        // Comparar sin @s.whatsapp.net
         if (normalizedSenderId.includes(ownerJidWithoutSuffix) || ownerJidWithoutSuffix.includes(normalizedSenderId)) {
-            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid`);
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid (sin suffix)`);
+            return true;
+        }
+        
+        // Comparar con @s.whatsapp.net completo
+        if (normalizedSenderId.includes(normalizedOwnerJid) || normalizedOwnerJid.includes(normalizedSenderId)) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid (con suffix)`);
             return true;
         }
     }
