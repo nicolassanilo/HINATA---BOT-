@@ -394,15 +394,25 @@ async function connectToWhatsApp() {
                 const groupBurstSeconds = (runtimeConfig.cooldowns && runtimeConfig.cooldowns.groupBurstSeconds) ? runtimeConfig.cooldowns.groupBurstSeconds : 60;
 
                 // Owner bypass: if sender is owner, skip cooldowns
-                const ownerId = (runtimeConfig.ownerJid && runtimeConfig.ownerJid.toString().trim()) || (runtimeConfig.propietario && runtimeConfig.propietario.toString().trim()) || '';
+                const ownerId = (runtimeConfig.ownerJid && runtimeConfig.ownerJid.toString().trim()) || (runtimeConfig.propietario && runtimeConfig.propietario.toString().trim()) || (runtimeConfig.phoneNumber && runtimeConfig.phoneNumber.toString().trim()) || '';
                 let isOwner = false;
                 if (ownerId) {
                     try {
-                        if (ownerId.includes('@')) {
-                            isOwner = userId === ownerId;
+                        // Normalizar números para comparación
+                        const normalizeNumber = (num) => num.replace(/[^0-9+]/g, '').replace(/^00/, '+');
+                        const normalizedOwnerId = normalizeNumber(ownerId);
+                        const normalizedUserId = normalizeNumber(userId);
+                        
+                        // Verificar coincidencia con ownerJid (con y sin @s.whatsapp.net)
+                        if (normalizedOwnerId.includes(normalizedUserId) || normalizedUserId.includes(normalizedOwnerId.replace('@s.whatsapp.net', ''))) {
+                            isOwner = true;
                         } else {
-                            // allow matching by phone or partial match
-                            isOwner = userId === ownerId || userId.includes(ownerId) || userId.startsWith(ownerId);
+                            // Verificación tradicional como fallback
+                            if (ownerId.includes('@')) {
+                                isOwner = userId === ownerId;
+                            } else {
+                                isOwner = userId === ownerId || userId.includes(ownerId) || userId.startsWith(ownerId);
+                            }
                         }
                     } catch (e) {
                         isOwner = false;
