@@ -6,14 +6,77 @@ export async function run(sock, m) {
   const chatId = (m && m.key && m.key.remoteJid) ? m.key.remoteJid : (m.chat || m.from || '');
 
   const menu = `
-╔═══❖•ೋ° °ೋ•❖═══╗
-║     🌟 HINATA-BOT 🌟
-║   ¡Tu asistente virtual!
-╚═══❖•ೋ° °ೋ•❖═══╝
+╔════════════════════════════╗
+║     🌟 HINATA-BOT v3.0 🌟     ║
+║   ¡Tu asistente virtual mejorado!   ║
+╚════════════════════════════╝
 
-╔══════════════════════╗
-║   📋 MENÚ PRINCIPAL
-╚══════════════════════╝
+╔════════════════════════════╗
+║     📋 MENÚ PRINCIPAL     ║
+║  💖 Sistema Waifu v3.0 Activo!  ║
+╚════════════════════════════╝
+
+╔═══💖 WAIFU SYSTEM v3.0 ═══╗
+║
+║ 🌟 *.waifus* [página|filtro]
+║    └ Lista completa con paginación
+║    └ Filtros: disponibles, reclamados
+║    └ Ej: .waifus --page=2
+║
+║ 💝 *.claim* <nombre>
+║    └ Reclama tu waifu ideal
+║    └ Ej: .claim Hinata Hyuga
+║
+║ 📋 *.mywaifus*
+║    └ Tu colección personal
+║    └ Estadísticas y progreso
+║
+║ 🎭 *.waifu* <nombre>
+║    └ Detalles avanzados
+║    └ Nivel, EXP, estadísticas
+║
+║ 💕 *.interact* <nombre> <acción>
+║    └ Interactúa con tu waifu
+║    └ Acciones: afectar, alimentar, jugar
+║    └ Ej: .interact Hinata Hyuga afectar
+║
+║ 🌟 *.evolucion* <nombre>
+║    └ Progreso de evolución
+║    └ Barras de EXP visual
+║
+║ ⚔️ *.batalla* <waifu> @oponente <waifu>
+║    └ Sistema de combate PvP
+║    └ Estadísticas de batalla
+║    └ Cooldown: 1 hora
+║
+║ 💰 *.vender* <nombre>
+║    └ Vende tu waifu (50% valor)
+║    └ Recuperar inversión
+║
+║ 📊 *.waifuinfo* <nombre>
+║    └ Información básica
+║    └ Anime, rareza, precio
+║
+║ 🏆 *.coleccion*
+║    └ Estadísticas completas
+║    └ Valor total, rarezas, top 3
+║
+║ 🎯 *Sistema de Niveles:*
+║    └ 100 niveles máximos
+║    └ Sistema EXP progresivo
+║    └ Bonificaciones por rareza
+║
+║ 💎 *8 Categorías de Rareza:*
+║    └ 👑 Mítico (100k+ pts)
+║    └ 💠 Legendario (50k+ pts)
+║    └ 💎 Épico Legendario (30k+ pts)
+║    └ 🔥 Épico (20k+ pts)
+║    └ ⚡ Super Raro (15k+ pts)
+║    └ 🌟 Raro (10k+ pts)
+║    └ ✨ Poco Común (5k+ pts)
+║    └ ⚪ Común (<5k pts)
+║
+╚════════════════════╝
 
 ╔═══🔍 BÚSQUEDAS ═══╗
 ║
@@ -27,8 +90,8 @@ export async function run(sock, m) {
 ║ 📌 *.pinterest* <texto>
 ║    └ Busca imágenes en Pinterest
 ║
-║ 🖼️ *.waifu*
-║    └ Waifus aleatorios
+║ 🖼️ *.waifurandom*
+║    └ Waifus aleatorios (legacy)
 ║
 ╚════════════════════╝
 
@@ -77,7 +140,7 @@ export async function run(sock, m) {
 
 ╔═══🎭 ACCIONES ANIME ═══╗
 ║
-║ � *Emociones Negativas:*
+║ 😢 *Emociones Negativas:*
 ║ • *.angry* / *.enojado*
 ║ • *.cry* / *.llorar*
 ║ • *.bored* / *.aburrido*
@@ -240,17 +303,18 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔══════════════════════╗
-║   💡 Usa .help <comando> para más info
-║   🎮 Total: 70+ comandos disponibles
-║   🌟 ¡Disfruta de HINATA-BOT!
-╚══════════════════════╝
+╔════════════════════════════╗
+║ 💡 Usa .help <comando> para más info ║
+║ 🎮 Total: 80+ comandos disponibles  ║
+║ 🌟 ¡Disfruta de HINATA-BOT v3.0!  ║
+╚════════════════════════════╝
 
-╔══════════════════════╗
-║   👨‍💻 Creado por: nicolassanilo
-║   📱 Versión: 2.1.0
-║   ⚡ Estado: 🟢 Online
-╚══════════════════════╝
+╔════════════════════════════╗
+║ 👨‍💻 Creado por: nicolassanilo  ║
+║ 📱 Versión: 3.0.0               ║
+║ ⚡ Estado: 🟢 Online           ║
+║ 💖 Sistema Waifu: ✅ Activo     ║
+╚════════════════════════════╝
 `;
 
   const imgPath = './media/menu.jpg';

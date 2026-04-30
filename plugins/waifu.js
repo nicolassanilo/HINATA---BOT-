@@ -1,7 +1,8 @@
 /**
- * @file Plugin Waifu Mejorado - Sistema completo de colección de personajes
- * @version 2.0.0
+ * @file Plugin Waifu Mejorado v3.0 - Sistema completo de colección de personajes
+ * @version 3.0.0
  * @author Mejorado para HINATA-BOT
+ * @description Sistema avanzado de colección con niveles, interacciones y evolución
  */
 
 import { db } from './db.js';
@@ -9,18 +10,586 @@ import fs from 'fs/promises';
 
 // Cargar personajes desde el archivo JSON
 let characters = [];
+let charactersCache = new Map(); // Cache para optimizar rendimiento
+let lastCacheUpdate = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 async function loadCharacters() {
   try {
     const data = await fs.readFile('./characters.json', 'utf8');
     characters = JSON.parse(data);
+    updateCharactersCache();
+    lastCacheUpdate = Date.now();
+    console.log(`✅ ${characters.length} personajes cargados correctamente`);
   } catch (error) {
-    console.error('Error al cargar characters.json:', error);
+    console.error('❌ Error al cargar characters.json:', error);
+    characters = [];
   }
 }
+
+function updateCharactersCache() {
+  charactersCache.clear();
+  characters.forEach(char => {
+    charactersCache.set(char.id, char);
+    charactersCache.set(char.name.toLowerCase(), char);
+  });
+}
+
+function getCharacterById(id) {
+  if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
+    loadCharacters();
+  }
+  return charactersCache.get(id);
+}
+
+function getCharacterByName(name) {
+  if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
+    loadCharacters();
+  }
+  return charactersCache.get(name.toLowerCase());
+}
+
+// Sistema de niveles y experiencia
+async function getWaifuLevel(characterId, userId) {
+  const waifuData = await db.get(
+    'SELECT level, experience FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  );
+  return waifuData ? waifuData.level : 1;
+}
+
+async function getWaifuExp(characterId, userId) {
+  const waifuData = await db.get(
+    'SELECT experience FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  );
+  return waifuData ? waifuData.experience : 0;
+}
+
+async function addWaifuExp(characterId, userId, exp) {
+  const current = await db.get(
+    'SELECT level, experience FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  );
+  
+  if (!current) {
+    await db.run(
+      'INSERT INTO waifu_levels (character_id, user_id, level, experience) VALUES (?, ?, ?, ?)',
+      [characterId, userId, 1, exp]
+    );
+    return { level: 1, exp, leveledUp: exp >= getExpForNextLevel(1) };
+  }
+  
+  let newExp = current.experience + exp;
+  let newLevel = current.level;
+  let leveledUp = false;
+  
+  while (newExp >= getExpForNextLevel(newLevel) && newLevel < 100) {
+    newExp -= getExpForNextLevel(newLevel);
+    newLevel++;
+    leveledUp = true;
+  }
+  
+  await db.run(
+    'UPDATE waifu_levels SET level = ?, experience = ? WHERE character_id = ? AND user_id = ?',
+    [newLevel, newExp, characterId, userId]
+  );
+  
+  return { level: newLevel, exp: newExp, leveledUp };
+}
+
+function getExpForNextLevel(level) {
+  return Math.floor(100 * Math.pow(1.5, level - 1));
+}
+
+function getExpProgress(characterId, userId) {
+  return db.get(
+    'SELECT level, experience FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  ).then(data => {
+    if (!data) return { level: 1, current: 0, needed: getExpForNextLevel(1), progress: 0 };
+    const needed = getExpForNextLevel(data.level);
+    return {
+      level: data.level,
+      current: data.experience,
+      needed,
+      progress: Math.floor((data.experience / needed) * 100)
+    };
+  });
+}
+
+// Crear tabla de niveles si no existe
+async function initializeWaifuLevels() {
+  try {
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS waifu_levels (
+        character_id INTEGER,
+        user_id TEXT,
+        level INTEGER DEFAULT 1,
+        experience INTEGER DEFAULT 0,
+        affection INTEGER DEFAULT 0,
+        hunger INTEGER DEFAULT 100,
+        happiness INTEGER DEFAULT 100,
+        last_interaction DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (character_id, user_id)
+      )
+    `);
+    console.log('✅ Tabla waifu_levels inicializada');
+  } catch (error) {
+    console.error('❌ Error al inicializar tabla waifu_levels:', error);
+  }
+}
+
+// Sistema de logging mejorado
+const logger = {
+  info: (message, data = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ℹ️ [WAIFU] ${message}`;
+    console.log(logMessage);
+    if (data) console.log('Data:', data);
+  },
+  
+  success: (message, data = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ✅ [WAIFU] ${message}`;
+    console.log(logMessage);
+    if (data) console.log('Data:', data);
+  },
+  
+  warning: (message, data = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ⚠️ [WAIFU] ${message}`;
+    console.warn(logMessage);
+    if (data) console.log('Data:', data);
+  },
+  
+  error: (message, error = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ❌ [WAIFU] ${message}`;
+    console.error(logMessage);
+    if (error) {
+      console.error('Error:', error);
+      if (error.stack) console.error('Stack:', error.stack);
+    }
+  },
+  
+  debug: (message, data = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] 🔍 [WAIFU] ${message}`;
+    console.log(logMessage);
+    if (data) console.log('Data:', data);
+  }
+};
+
+// Manejador de errores centralizado
+class WaifuError extends Error {
+  constructor(message, type = 'GENERAL', code = null, details = null) {
+    super(message);
+    this.name = 'WaifuError';
+    this.type = type;
+    this.code = code;
+    this.details = details;
+    this.timestamp = new Date().toISOString();
+  }
+}
+
+// Tipos de errores
+const ErrorTypes = {
+  VALIDATION: 'VALIDATION',
+  DATABASE: 'DATABASE',
+  NETWORK: 'NETWORK',
+  PERMISSION: 'PERMISSION',
+  NOT_FOUND: 'NOT_FOUND',
+  COOLDOWN: 'COOLDOWN',
+  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+  GENERAL: 'GENERAL'
+};
+
+// Manejador centralizado de errores
+async function handleWaifuError(error, sock, chatId, m = null) {
+  let userMessage = '❌ Ocurrió un error inesperado. Por favor, intenta nuevamente más tarde.'
+  
+  if (error instanceof WaifuError) {
+    logger.error(`WaifuError [${error.type}]: ${error.message}`, error.details);
+    
+    switch (error.type) {
+      case ErrorTypes.VALIDATION:
+        userMessage = `❌ ${error.message}`;
+        break;
+      case ErrorTypes.NOT_FOUND:
+        userMessage = `🔍 ${error.message}`;
+        break;
+      case ErrorTypes.INSUFFICIENT_FUNDS:
+        userMessage = `💰 ${error.message}`;
+        break;
+      case ErrorTypes.COOLDOWN:
+        userMessage = `⏰ ${error.message}`;
+        break;
+      case ErrorTypes.PERMISSION:
+        userMessage = `🚫 ${error.message}`;
+        break;
+      case ErrorTypes.DATABASE:
+        userMessage = '🗄️ Error en la base de datos. Por favor, contacta al administrador.';
+        break;
+      case ErrorTypes.NETWORK:
+        userMessage = '🌐 Error de conexión. Por favor, verifica tu internet e intenta nuevamente.';
+        break;
+      default:
+        userMessage = `❌ ${error.message}`;
+    }
+  } else {
+    logger.error('Error no manejado:', error);
+  }
+  
+  try {
+    await sock.sendMessage(chatId, { text: userMessage }, m ? { quoted: m } : {});
+  } catch (sendError) {
+    logger.error('Error al enviar mensaje de error:', sendError);
+  }
+}
+
+// Función wrapper para manejo seguro de operaciones
+async function safeExecute(operation, errorMessage = 'Error en la operación') {
+  try {
+    return await operation();
+  } catch (error) {
+    logger.error(errorMessage, error);
+    throw new WaifuError(errorMessage, ErrorTypes.GENERAL, null, error);
+  }
+}
+
+// Validación de datos de entrada
+function validateInput(data, rules) {
+  const errors = [];
+  
+  for (const [field, rule] of Object.entries(rules)) {
+    const value = data[field];
+    
+    if (rule.required && (!value || value.trim() === '')) {
+      errors.push(`El campo '${field}' es requerido`);
+      continue;
+    }
+    
+    if (value && rule.type && typeof value !== rule.type) {
+      errors.push(`El campo '${field}' debe ser de tipo ${rule.type}`);
+    }
+    
+    if (value && rule.minLength && value.length < rule.minLength) {
+      errors.push(`El campo '${field}' debe tener al menos ${rule.minLength} caracteres`);
+    }
+    
+    if (value && rule.maxLength && value.length > rule.maxLength) {
+      errors.push(`El campo '${field}' no puede exceder ${rule.maxLength} caracteres`);
+    }
+    
+    if (value && rule.pattern && !rule.pattern.test(value)) {
+      errors.push(`El campo '${field}' tiene un formato inválido`);
+    }
+  }
+  
+  if (errors.length > 0) {
+    throw new WaifuError(errors.join(', '), ErrorTypes.VALIDATION, 'VALIDATION_ERROR', { errors });
+  }
+  
+  return true;
+}
+
+// Sistema de métricas y monitoreo
+const metrics = {
+  commands: new Map(),
+  errors: new Map(),
+  performance: new Map(),
+  
+  recordCommand(command, duration, success = true) {
+    if (!this.commands.has(command)) {
+      this.commands.set(command, { count: 0, totalDuration: 0, errors: 0 });
+    }
+    
+    const cmd = this.commands.get(command);
+    cmd.count++;
+    cmd.totalDuration += duration;
+    
+    if (!success) cmd.errors++;
+    
+    // Log cada 10 ejecuciones
+    if (cmd.count % 10 === 0) {
+      const avgDuration = cmd.totalDuration / cmd.count;
+      logger.info(`Command ${command}: ${cmd.count} ejecuciones, ${avgDuration}ms avg, ${cmd.errors} errores`);
+    }
+  },
+  
+  recordError(errorType, message) {
+    const count = this.errors.get(errorType) || 0;
+    this.errors.set(errorType, count + 1);
+    
+    if (count % 5 === 0) {
+      logger.warning(`Error type ${errorType}: ${count + 1} ocurrencias`);
+    }
+  },
+  
+  getStats() {
+    const stats = {
+      commands: Object.fromEntries(this.commands),
+      errors: Object.fromEntries(this.errors),
+      timestamp: new Date().toISOString()
+    };
+    
+    return stats;
+  }
+};
+
+// Sistema de caché avanzado para optimización de rendimiento
+class WaifuCache {
+  constructor() {
+    this.cache = new Map();
+    this.timestamps = new Map();
+    this.hitCount = new Map();
+    this.missCount = 0;
+    this.defaultTTL = 5 * 60 * 1000; // 5 minutos
+  }
+  
+  set(key, value, ttl = this.defaultTTL) {
+    this.cache.set(key, value);
+    this.timestamps.set(key, Date.now() + ttl);
+    this.hitCount.set(key, 0);
+  }
+  
+  get(key) {
+    const timestamp = this.timestamps.get(key);
+    
+    if (!timestamp || Date.now() > timestamp) {
+      this.cache.delete(key);
+      this.timestamps.delete(key);
+      this.hitCount.delete(key);
+      this.missCount++;
+      return null;
+    }
+    
+    const hits = this.hitCount.get(key) || 0;
+    this.hitCount.set(key, hits + 1);
+    
+    return this.cache.get(key);
+  }
+  
+  has(key) {
+    return this.get(key) !== null;
+  }
+  
+  delete(key) {
+    this.cache.delete(key);
+    this.timestamps.delete(key);
+    this.hitCount.delete(key);
+  }
+  
+  clear() {
+    this.cache.clear();
+    this.timestamps.clear();
+    this.hitCount.clear();
+    this.missCount = 0;
+  }
+  
+  // Limpieza automática de elementos expirados
+  cleanup() {
+    const now = Date.now();
+    const expiredKeys = [];
+    
+    for (const [key, timestamp] of this.timestamps) {
+      if (now > timestamp) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    expiredKeys.forEach(key => this.delete(key));
+    
+    if (expiredKeys.length > 0) {
+      logger.debug(`Cache cleanup: eliminados ${expiredKeys.length} elementos expirados`);
+    }
+    
+    return expiredKeys.length;
+  }
+  
+  getStats() {
+    const totalHits = Array.from(this.hitCount.values()).reduce((sum, hits) => sum + hits, 0);
+    const totalRequests = totalHits + this.missCount;
+    const hitRate = totalRequests > 0 ? (totalHits / totalRequests * 100).toFixed(2) : 0;
+    
+    return {
+      size: this.cache.size,
+      hits: totalHits,
+      misses: this.missCount,
+      hitRate: `${hitRate}%`,
+      topKeys: Array.from(this.hitCount.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+    };
+  }
+}
+
+// Instancia global de caché
+const waifuCache = new WaifuCache();
+
+// Limpieza automática cada 10 minutos
+setInterval(() => {
+  waifuCache.cleanup();
+}, 10 * 60 * 1000);
+
+// Funciones de caché para consultas frecuentes
+async function getCachedUserWaifus(userId) {
+  const cacheKey = `user_waifus_${userId}`;
+  let waifus = waifuCache.get(cacheKey);
+  
+  if (!waifus) {
+    waifus = await safeExecute(async () => {
+      const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+      const claimedIds = claimed.map(c => c.character_id);
+      return characters.filter(c => claimedIds.includes(c.id));
+    }, 'Error al obtener waifus del usuario');
+    
+    waifuCache.set(cacheKey, waifus, 3 * 60 * 1000); // 3 minutos
+  }
+  
+  return waifus;
+}
+
+async function getCachedWaifuStats(characterId, userId) {
+  const cacheKey = `waifu_stats_${characterId}_${userId}`;
+  let stats = waifuCache.get(cacheKey);
+  
+  if (!stats) {
+    stats = await safeExecute(async () => {
+      const level = await getWaifuLevel(characterId, userId);
+      const expProgress = await getExpProgress(characterId, userId);
+      const waifuStats = await getWaifuStats(characterId, userId);
+      
+      return { level, expProgress, waifuStats };
+    }, 'Error al obtener estadísticas de waifu');
+    
+    waifuCache.set(cacheKey, stats, 2 * 60 * 1000); // 2 minutos
+  }
+  
+  return stats;
+}
+
+async function getCachedBattleStats(characterId, userId) {
+  const cacheKey = `battle_stats_${characterId}_${userId}`;
+  let stats = waifuCache.get(cacheKey);
+  
+  if (!stats) {
+    stats = await safeExecute(async () => {
+      const level = await getWaifuLevel(characterId, userId);
+      const baseStats = await getWaifuStats(characterId, userId);
+      
+      return {
+        level,
+        attack: Math.floor(10 + level * 2 + baseStats.affection * 0.1),
+        defense: Math.floor(5 + level * 1.5 + baseStats.happiness * 0.05),
+        speed: Math.floor(8 + level * 1.2 + (100 - baseStats.hunger) * 0.05),
+        hp: 100 + level * 5
+      };
+    }, 'Error al obtener estadísticas de combate');
+    
+    waifuCache.set(cacheKey, stats, 5 * 60 * 1000); // 5 minutos
+  }
+  
+  return stats;
+}
+
+// Invalidación de caché cuando hay cambios
+function invalidateUserCache(userId) {
+  const keysToDelete = [];
+  
+  for (const key of waifuCache.cache.keys()) {
+    if (key.includes(userId)) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => waifuCache.delete(key));
+  
+  if (keysToDelete.length > 0) {
+    logger.debug(`Invalidados ${keysToDelete.length} elementos de caché para usuario ${userId}`);
+  }
+}
+
+function invalidateWaifuCache(characterId, userId = null) {
+  const keysToDelete = [];
+  
+  for (const key of waifuCache.cache.keys()) {
+    if (key.includes(characterId) && (!userId || key.includes(userId))) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => waifuCache.delete(key));
+  
+  if (keysToDelete.length > 0) {
+    logger.debug(`Invalidados ${keysToDelete.length} elementos de caché para waifu ${characterId}`);
+  }
+}
+
+// Optimización de consultas a la base de datos
+class DatabaseOptimizer {
+  constructor() {
+    this.queryCache = new Map();
+    this.batchOperations = [];
+    this.batchTimeout = null;
+  }
+  
+  // Consulta con caché
+  async cachedQuery(query, params, ttl = 60000) {
+    const cacheKey = `${query}_${JSON.stringify(params)}`;
+    
+    let result = this.queryCache.get(cacheKey);
+    if (result) {
+      return result;
+    }
+    
+    result = await db.get(query, params);
+    this.queryCache.set(cacheKey, result, ttl);
+    
+    return result;
+  }
+  
+  // Operaciones por lotes
+  batchQuery(query, params) {
+    this.batchOperations.push({ query, params });
+    
+    if (!this.batchTimeout) {
+      this.batchTimeout = setTimeout(() => {
+        this.executeBatch();
+      }, 100); // 100ms de acumulación
+    }
+  }
+  
+  async executeBatch() {
+    if (this.batchOperations.length === 0) return;
+    
+    const operations = [...this.batchOperations];
+    this.batchOperations = [];
+    this.batchTimeout = null;
+    
+    try {
+      await Promise.all(operations.map(op => db.run(op.query, op.params)));
+      logger.debug(`Ejecutadas ${operations.length} operaciones en batch`);
+    } catch (error) {
+      logger.error('Error en operaciones batch:', error);
+    }
+  }
+  
+  clearCache() {
+    this.queryCache.clear();
+  }
+}
+
+const dbOptimizer = new DatabaseOptimizer();
+
+// Inicializar tabla al cargar
+initializeWaifuLevels();
+
 loadCharacters();
 
-export const command = ['.claim', '.waifus', '.mywaifus', '.vender', '.waifuinfo', '.coleccion'];
-export const description = 'Sistema completo de colección de personajes de anime.';
+export const command = ['.claim', '.waifus', '.mywaifus', '.vender', '.waifuinfo', '.coleccion', '.waifu', '.interact', '.evolucion', '.batalla'];
+export const description = 'Sistema avanzado de colección de personajes de anime con niveles e interacciones.';
 
 /**
  * Función principal que maneja todos los comandos de waifu
@@ -32,7 +601,7 @@ export async function run(sock, m, { text, command }) {
   try {
     switch (command) {
       case '.waifus':
-        await listWaifus(sock, m);
+        await listWaifus(sock, m, text);
         break;
       case '.claim':
         await claimWaifu(sock, m, userId, text);
@@ -49,21 +618,46 @@ export async function run(sock, m, { text, command }) {
       case '.coleccion':
         await showCollectionStats(sock, m, userId);
         break;
+      case '.waifu':
+        await showWaifuDetails(sock, m, userId, text);
+        break;
+      case '.interact':
+        await interactWithWaifu(sock, m, userId, text);
+        break;
+      case '.evolucion':
+        await showEvolution(sock, m, userId, text);
+        break;
+      case '.batalla':
+        await waifuBattle(sock, m, userId, text);
+        break;
     }
   } catch (error) {
-    console.error(`Error en el comando ${command}:`, error);
+    console.error(`❌ Error en el comando ${command}:`, error);
     await sock.sendMessage(chatId, {
-      text: '❌ Ocurrió un error al procesar tu solicitud de waifu.'
+      text: '❌ Ocurrió un error al procesar tu solicitud de waifu. Por favor, intenta nuevamente.'
     }, { quoted: m });
   }
 }
 
 /**
- * Lista todos los personajes disponibles con filtros mejorados
+ * Lista todos los personajes disponibles con paginación y filtros mejorados
  */
-async function listWaifus(sock, m) {
+async function listWaifus(sock, m, text) {
   const chatId = m.key.remoteJid;
-  const args = (m.text || '').split(' ').slice(1); // Obtener argumentos después del comando
+  const args = (text || '').split(' ').slice(1);
+  
+  // Parsear página y filtros
+  let page = 1;
+  let filtro = '';
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--page=') || arg.startsWith('-p=')) {
+      page = parseInt(arg.split('=')[1]) || 1;
+    } else if (!filtro) {
+      filtro = arg.toLowerCase();
+    }
+  }
 
   // Obtener personajes reclamados
   const claimed = await db.all('SELECT character_id, user_id FROM claimed_characters');
@@ -74,8 +668,7 @@ async function listWaifus(sock, m) {
   let filteredCharacters = characters;
   let filtroTexto = '';
 
-  if (args.length > 0) {
-    const filtro = args.join(' ').toLowerCase();
+  if (filtro) {
     if (filtro === 'disponibles' || filtro === 'available') {
       filteredCharacters = characters.filter(c => !claimedIds.includes(c.id));
       filtroTexto = ' (Disponibles)';
@@ -88,31 +681,40 @@ async function listWaifus(sock, m) {
         c.name.toLowerCase().includes(filtro) ||
         c.anime.toLowerCase().includes(filtro)
       );
-      filtroTexto = ` (Búsqueda: "${args.join(' ')}")`;
+      filtroTexto = ` (Búsqueda: "${filtro}")`;
     }
   }
 
   // Ordenar por precio (más caros primero)
   filteredCharacters.sort((a, b) => b.price - a.price);
 
-  // Crear mensaje paginado (máximo 15 personajes por mensaje)
-  const personajesPorPagina = 15;
+  // Sistema de paginación
+  const personajesPorPagina = 10;
   const totalPaginas = Math.ceil(filteredCharacters.length / personajesPorPagina);
-  const paginaActual = 1; // Por ahora solo primera página
-
-  const personajesMostrar = filteredCharacters.slice(0, personajesPorPagina);
+  page = Math.max(1, Math.min(page, totalPaginas));
+  
+  const startIndex = (page - 1) * personajesPorPagina;
+  const endIndex = startIndex + personajesPorPagina;
+  const personajesMostrar = filteredCharacters.slice(startIndex, endIndex);
 
   let list = `🌟 *LISTA DE PERSONAJES${filtroTexto}* 🌟\n\n`;
-  list += `📊 *Mostrando ${personajesMostrar.length} de ${filteredCharacters.length} personajes*\n\n`;
+  list += `📊 *Página ${page} de ${totalPaginas}* (${filteredCharacters.length} totales)\n\n`;
 
   for (const char of personajesMostrar) {
     const isClaimed = claimedIds.includes(char.id);
     const status = isClaimed ? `❌ Reclamado` : '✅ Disponible';
     const rareza = getRarezaEmoji(char.price);
+    let nivel = 1;
+    
+    if (isClaimed) {
+      const ownerId = claimedMap[char.id];
+      nivel = await getWaifuLevel(char.id, ownerId);
+    }
 
     list += `${rareza} *${char.name}*\n`;
     list += `📺 ${char.anime}\n`;
     list += `💎 ${char.price.toLocaleString()} puntos\n`;
+    list += `⭐ Nivel ${nivel}\n`;
     list += `📋 ${status}\n\n`;
   }
 
@@ -120,11 +722,15 @@ async function listWaifus(sock, m) {
   list += `• \`.waifus\` - Ver todos\n`;
   list += `• \`.waifus disponibles\` - Solo disponibles\n`;
   list += `• \`.waifus <nombre/anime>\` - Buscar\n`;
+  list += `• \`.waifus --page=2\` - Cambiar página\n`;
   list += `• \`.claim <nombre>\` - Reclamar\n`;
   list += `• \`.waifuinfo <nombre>\` - Info detallada\n`;
 
+  // Navegación de páginas
   if (totalPaginas > 1) {
-    list += `\n📄 *Página 1 de ${totalPaginas}*`;
+    list += `\n📄 *Navegación:* \n`;
+    if (page > 1) list += `• \`.waifus --page=${page - 1}\` ← Anterior\n`;
+    if (page < totalPaginas) list += `• \`.waifus --page=${page + 1}\` Siguiente →\n`;
   }
 
   await sock.sendMessage(chatId, { text: list, mentions: Object.values(claimedMap) }, { quoted: m });
@@ -444,21 +1050,620 @@ async function showCollectionStats(sock, m, userId) {
 }
 
 /**
- * Función auxiliar para obtener emoji de rareza según precio
+ * Función auxiliar para obtener emoji de rareza según precio (Sistema mejorado)
  */
 function getRarezaEmoji(price) {
-  if (price >= 30000) return '💎'; // Legendario
-  if (price >= 15000) return '🔥'; // Épico
-  if (price >= 5000) return '⭐';  // Raro
+  if (price >= 100000) return '👑'; // Mítico
+  if (price >= 50000) return '💠'; // Legendario
+  if (price >= 30000) return '💎'; // Épico Legendario
+  if (price >= 20000) return '🔥'; // Épico
+  if (price >= 15000) return '⚡'; // Super Raro
+  if (price >= 10000) return '🌟'; // Raro
+  if (price >= 5000) return '✨';  // Poco Común
   return '⚪'; // Común
 }
 
 /**
- * Función auxiliar para obtener texto de rareza
+ * Función auxiliar para obtener texto de rareza (Sistema mejorado)
  */
 function getRarezaTexto(price) {
-  if (price >= 30000) return 'Legendario';
-  if (price >= 15000) return 'Épico';
-  if (price >= 5000) return 'Raro';
+  if (price >= 100000) return 'Mítico';
+  if (price >= 50000) return 'Legendario';
+  if (price >= 30000) return 'Épico Legendario';
+  if (price >= 20000) return 'Épico';
+  if (price >= 15000) return 'Super Raro';
+  if (price >= 10000) return 'Raro';
+  if (price >= 5000) return 'Poco Común';
   return 'Común';
 }
+
+/**
+ * Función auxiliar para obtener color de rareza para mensajes
+ */
+function getRarezaColor(price) {
+  if (price >= 100000) return '#FFD700'; // Dorado (Mítico)
+  if (price >= 50000) return '#9400D3'; // Violeta (Legendario)
+  if (price >= 30000) return '#FF1493'; // Rosa intenso (Épico Legendario)
+  if (price >= 20000) return '#FF4500'; // Naranja rojizo (Épico)
+  if (price >= 15000) return '#4169E1'; // Azul real (Super Raro)
+  if (price >= 10000) return '#32CD32'; // Verde lima (Raro)
+  if (price >= 5000) return '#87CEEB';  // Azul cielo (Poco Común)
+  return '#808080'; // Gris (Común)
+}
+
+/**
+ * Muestra detalles detallados de una waifu específica del usuario
+ */
+async function showWaifuDetails(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  
+  if (args.length === 0) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el nombre de tu waifu.\n\n' +
+            '💡 *Ejemplo:* `.waifu Hinata Hyuga`\n' +
+            'Usa `.mywaifus` para ver tus waifus.'
+    }, { quoted: m });
+  }
+  
+  const characterName = args.join(' ');
+  
+  // Buscar si el usuario tiene esta waifu
+  const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+  const claimedIds = claimed.map(c => c.character_id);
+  
+  const character = characters.find(c => 
+    claimedIds.includes(c.id) &&
+    c.name.toLowerCase().includes(characterName.toLowerCase())
+  );
+  
+  if (!character) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ No tienes a *${characterName}* en tu colección.\n\n` +
+            'Usa `.mywaifus` para ver tus waifus disponibles.'
+    }, { quoted: m });
+  }
+  
+  const level = await getWaifuLevel(character.id, userId);
+  const expProgress = await getExpProgress(character.id, userId);
+  const waifuStats = await getWaifuStats(character.id, userId);
+  
+  const rareza = getRarezaEmoji(character.price);
+  const rarezaTexto = getRarezaTexto(character.price);
+  
+  let details = `💖 *DETALLES DE WAIFU* 💖\n\n`;
+  details += `${rareza} *${character.name}*\n`;
+  details += `📺 *Anime:* ${character.anime}\n`;
+  details += `💎 *Valor:* ${character.price.toLocaleString()} puntos\n`;
+  details += `⭐ *Rareza:* ${rarezaTexto}\n`;
+  details += `📊 *Nivel:* ${level}\n`;
+  details += `✨ *Experiencia:* ${expProgress.current}/${expProgress.needed} (${expProgress.progress}%)\n`;
+  details += `❤️ *Afecto:* ${waifuStats.affection}/100\n`;
+  details += `🍖 *Hambre:* ${waifuStats.hunger}/100\n`;
+  details += `😊 *Felicidad:* ${waifuStats.happiness}/100\n\n`;
+  
+  details += `💡 *Comandos de interacción:*\n`;
+  details += `• \`.interact ${character.name} afectar\` - Aumentar afecto\n`;
+  details += `• \`.interact ${character.name} alimentar\` - Alimentar\n`;
+  details += `• \`.interact ${character.name} jugar\` - Jugar\n`;
+  details += `• \`.evolucion ${character.name}\` - Ver evolución\n`;
+  
+  try {
+    await sock.sendMessage(chatId, {
+      image: { url: character.image_url[0] },
+      caption: details,
+      mentions: [userId]
+    }, { quoted: m });
+  } catch (imageError) {
+    console.error('Error al enviar imagen:', imageError);
+    await sock.sendMessage(chatId, { text: details, mentions: [userId] }, { quoted: m });
+  }
+}
+
+/**
+ * Sistema de interacción con waifus
+ */
+async function interactWithWaifu(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  
+  if (args.length < 2) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Uso incorrecto del comando.\n\n' +
+            '💡 *Formato:* `.interact <nombre> <acción>\n' +
+            '*Acciones disponibles:* afectar, alimentar, jugar\n\n' +
+            '*Ejemplos:*\n' +
+            '• `.interact Hinata Hyuga afectar`\n' +
+            '• `.interact Asuna Yuuki alimentar`\n' +
+            '• `.interact Mikasa Ackerman jugar`'
+    }, { quoted: m });
+  }
+  
+  const characterName = args.slice(0, -1).join(' ');
+  const action = args[args.length - 1].toLowerCase();
+  
+  // Validar acción
+  const validActions = ['afectar', 'alimentar', 'jugar'];
+  if (!validActions.includes(action)) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ Acción "${action}" no válida.\n\n` +
+            '*Acciones disponibles:* ' + validActions.join(', ')
+    }, { quoted: m });
+  }
+  
+  // Verificar si el usuario tiene esta waifu
+  const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+  const claimedIds = claimed.map(c => c.character_id);
+  
+  const character = characters.find(c => 
+    claimedIds.includes(c.id) &&
+    c.name.toLowerCase().includes(characterName.toLowerCase())
+  );
+  
+  if (!character) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ No tienes a *${characterName}* en tu colección.\n\n` +
+            'Usa `.mywaifus` para ver tus waifus.'
+    }, { quoted: m });
+  }
+  
+  // Ejecutar la interacción
+  const result = await performInteraction(character.id, userId, action);
+  
+  if (!result.success) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ ${result.message}`
+    }, { quoted: m });
+  }
+  
+  const rareza = getRarezaEmoji(character.price);
+  let response = `${rareza} *${character.name}* - ${action.charAt(0).toUpperCase() + action.slice(1)}\n\n`;
+  response += result.message;
+  
+  if (result.expGained > 0) {
+    response += `\n✨ *+${result.expGained} EXP ganados*`;
+  }
+  
+  if (result.leveledUp) {
+    response += `\n🎉 *¡${character.name} ha subido al nivel ${result.newLevel}!*`;
+  }
+  
+  try {
+    await sock.sendMessage(chatId, {
+      image: { url: character.image_url[Math.floor(Math.random() * character.image_url.length)] },
+      caption: response,
+      mentions: [userId]
+    }, { quoted: m });
+  } catch (imageError) {
+    console.error('Error al enviar imagen:', imageError);
+    await sock.sendMessage(chatId, { text: response, mentions: [userId] }, { quoted: m });
+  }
+}
+
+/**
+ * Ejecuta una interacción específica con una waifu
+ */
+async function performInteraction(characterId, userId, action) {
+  const now = Date.now();
+  const cooldown = 30 * 60 * 1000; // 30 minutos de cooldown
+  
+  // Verificar cooldown
+  const lastInteraction = await db.get(
+    'SELECT last_interaction FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  );
+  
+  if (lastInteraction && (now - new Date(lastInteraction.last_interaction).getTime()) < cooldown) {
+    const remaining = Math.ceil((cooldown - (now - new Date(lastInteraction.last_interaction).getTime())) / 60000);
+    return {
+      success: false,
+      message: `⏰ Debes esperar ${remaining} minutos antes de volver a interactuar.`
+    };
+  }
+  
+  let expGained = 0;
+  let message = '';
+  let updates = {};
+  
+  const bonus = getRarezaBonus((characters.find(c => c.id === characterId) || {}).price || 1000);
+  
+  switch (action) {
+    case 'afectar':
+      expGained = Math.floor(15 * bonus);
+      updates.affection = 'affection + 5';
+      updates.happiness = 'happiness + 3';
+      message = '❤️ Le has mostrado afecto a tu waifu.\n💕 Afecto +5, Felicidad +3';
+      break;
+      
+    case 'alimentar':
+      expGained = Math.floor(20 * bonus);
+      updates.hunger = 'hunger + 20';
+      updates.happiness = 'happiness + 2';
+      message = '🍖 Has alimentado a tu waifu.\n🍕 Hambre +20, Felicidad +2';
+      break;
+      
+    case 'jugar':
+      expGained = Math.floor(25 * bonus);
+      updates.happiness = 'happiness + 5';
+      updates.affection = 'affection + 2';
+      updates.hunger = 'hunger - 5';
+      message = '🎮 Has jugado con tu waifu.\n😊 Felicidad +5, Afecto +2, Hambre -5';
+      break;
+  }
+  
+  // Actualizar estadísticas y experiencia
+  const setClause = Object.keys(updates).map(key => `${key} = ${updates[key]}`).join(', ');
+  
+  await db.run(`
+    UPDATE waifu_levels 
+    SET ${setClause}, last_interaction = CURRENT_TIMESTAMP 
+    WHERE character_id = ? AND user_id = ?
+  `, [characterId, userId]);
+  
+  const expResult = await addWaifuExp(characterId, userId, expGained);
+  
+  return {
+    success: true,
+    message,
+    expGained,
+    leveledUp: expResult.leveledUp,
+    newLevel: expResult.level
+  };
+}
+
+/**
+ * Obtiene las estadísticas actuales de una waifu
+ */
+async function getWaifuStats(characterId, userId) {
+  const stats = await db.get(
+    'SELECT affection, hunger, happiness FROM waifu_levels WHERE character_id = ? AND user_id = ?',
+    [characterId, userId]
+  );
+  
+  return stats || {
+    affection: 0,
+    hunger: 100,
+    happiness: 100
+  };
+}
+
+/**
+ * Muestra información de evolución de una waifu
+ */
+async function showEvolution(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  
+  if (args.length === 0) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el nombre de tu waifu.\n\n' +
+            '💡 *Ejemplo:* `.evolucion Hinata Hyuga`'
+    }, { quoted: m });
+  }
+  
+  const characterName = args.join(' ');
+  
+  // Verificar si el usuario tiene esta waifu
+  const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+  const claimedIds = claimed.map(c => c.character_id);
+  
+  const character = characters.find(c => 
+    claimedIds.includes(c.id) &&
+    c.name.toLowerCase().includes(characterName.toLowerCase())
+  );
+  
+  if (!character) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ No tienes a *${characterName}* en tu colección.`
+    }, { quoted: m });
+  }
+  
+  const level = await getWaifuLevel(character.id, userId);
+  const expProgress = await getExpProgress(character.id, userId);
+  const stats = await getWaifuStats(character.id, userId);
+  
+  const rareza = getRarezaEmoji(character.price);
+  
+  let evolution = `🌟 *Evolución de ${character.name}* 🌟\n\n`;
+  evolution += `${rareza} *Nivel Actual:* ${level}\n`;
+  evolution += `✨ *Experiencia:* ${expProgress.current}/${expProgress.needed} (${expProgress.progress}%)\n\n`;
+  
+  // Progreso de experiencia visual
+  const progressBar = '█'.repeat(Math.floor(expProgress.progress / 5)) + '░'.repeat(20 - Math.floor(expProgress.progress / 5));
+  evolution += `📊 *Progreso:* [${progressBar}] ${expProgress.progress}%\n\n`;
+  
+  evolution += `📈 *Estadísticas Actuales:*\n`;
+  evolution += `❤️ *Afecto:* ${stats.affection}/100\n`;
+  evolution += `🍖 *Hambre:* ${stats.hunger}/100\n`;
+  evolution += `😊 *Felicidad:* ${stats.happiness}/100\n\n`;
+  
+  // Próximos niveles
+  evolution += `🔮 *Próximos Niveles:*\n`;
+  for (let i = 1; i <= 3; i++) {
+    const nextLevel = level + i;
+    if (nextLevel <= 100) {
+      const neededExp = getExpForNextLevel(nextLevel - 1);
+      evolution += `• Nivel ${nextLevel}: ${neededExp.toLocaleString()} EXP total\n`;
+    }
+  }
+  
+  await sock.sendMessage(chatId, { text: evolution, mentions: [userId] }, { quoted: m });
+}
+
+/**
+ * Función auxiliar para obtener bonus de rareza
+ */
+function getRarezaBonus(price) {
+  if (price >= 100000) return 5.0; // Mítico: 500% bonus
+  if (price >= 50000) return 3.0; // Legendario: 300% bonus
+  if (price >= 30000) return 2.5; // Épico Legendario: 250% bonus
+  if (price >= 20000) return 2.0; // Épico: 200% bonus
+  if (price >= 15000) return 1.5; // Super Raro: 150% bonus
+  if (price >= 10000) return 1.3; // Raro: 130% bonus
+  if (price >= 5000) return 1.1;  // Poco Común: 110% bonus
+  return 1.0; // Común: 100% (sin bonus)
+}
+  
+/**
+ * Sistema de combate entre waifus
+ */
+async function waifuBattle(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  
+  if (args.length < 2) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Uso incorrecto del comando.\n\n' +
+            '💡 *Formato:* `.batalla <mi_waifu> <oponente>\n' +
+            '*Ejemplo:* `.batalla Hinata Hyuga @usuario Mikasa Ackerman`\n\n' +
+            '⚔️ Desafía a otro usuario a un combate de waifus'
+    }, { quoted: m });
+  }
+  
+  // Parsear argumentos (puede incluir mención)
+  const opponentMention = args.find(arg => arg.startsWith('@'));
+  const opponentId = opponentMention ? `${opponentMention.slice(1)}@s.whatsapp.net` : null;
+  
+  if (!opponentId || opponentId === userId) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes mencionar a otro usuario para desafiarlo.\n\n' +
+            '*Ejemplo:* `.batalla Hinata Hyuga @usuario Mikasa Ackerman`'
+    }, { quoted: m });
+  }
+  
+  // Extraer nombres de waifus
+  const myWaifuName = args.slice(0, args.indexOf(opponentMention)).join(' ');
+  const opponentWaifuName = args.slice(args.indexOf(opponentMention) + 1).join(' ');
+  
+  if (!myWaifuName || !opponentWaifuName) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar los nombres de ambas waifus.\n\n' +
+            '*Formato:* `.batalla <mi_waifu> @oponente <waifu_oponente>`'
+    }, { quoted: m });
+  }
+  
+  // Verificar que ambos usuarios tienen las waifus
+  const myWaifu = await validateUserWaifu(userId, myWaifuName);
+  const opponentWaifu = await validateUserWaifu(opponentId, opponentWaifuName);
+  
+  if (!myWaifu.success) {
+    return await sock.sendMessage(chatId, { text: `❌ ${myWaifu.message}` }, { quoted: m });
+  }
+  
+  if (!opponentWaifu.success) {
+    return await sock.sendMessage(chatId, { text: `❌ ${opponentWaifu.message}` }, { quoted: m });
+  }
+  
+  // Verificar cooldown de combate
+  const battleCooldown = await checkBattleCooldown(userId);
+  if (!battleCooldown.canBattle) {
+    return await sock.sendMessage(chatId, {
+      text: `⏰ Debes esperar ${battleCooldown.remainingMinutes} minutos antes de volver a combatir.`
+    }, { quoted: m });
+  }
+  
+  // Ejecutar combate
+  const battleResult = await executeBattle(myWaifu.character, opponentWaifu.character, userId, opponentId);
+  
+  // Mostrar resultado del combate
+  await displayBattleResult(sock, chatId, m, battleResult, userId, opponentId);
+}
+
+/**
+ * Valida que un usuario tenga una waifu específica
+ */
+async function validateUserWaifu(userId, waifuName) {
+  const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+  const claimedIds = claimed.map(c => c.character_id);
+  
+  const character = characters.find(c => 
+    claimedIds.includes(c.id) &&
+    c.name.toLowerCase().includes(waifuName.toLowerCase())
+  );
+  
+  if (!character) {
+    return {
+      success: false,
+      message: `No tienes la waifu "${waifuName}" en tu colección.`
+    };
+  }
+  
+  return {
+    success: true,
+    character
+  };
+}
+
+/**
+ * Verifica el cooldown de combate
+ */
+async function checkBattleCooldown(userId) {
+  const cooldown = 60 * 60 * 1000; // 1 hora de cooldown
+  const lastBattle = await db.get(
+    'SELECT last_battle FROM user_battle_stats WHERE user_id = ?',
+    [userId]
+  );
+  
+  if (lastBattle) {
+    const timeSince = Date.now() - new Date(lastBattle.last_battle).getTime();
+    if (timeSince < cooldown) {
+      const remaining = Math.ceil((cooldown - timeSince) / 60000);
+      return {
+        canBattle: false,
+        remainingMinutes: remaining
+      };
+    }
+  }
+  
+  return { canBattle: true };
+}
+
+/**
+ * Ejecuta un combate entre dos waifus
+ */
+async function executeBattle(waifu1, waifu2, userId1, userId2) {
+  // Obtener estadísticas de combate
+  const stats1 = await getBattleStats(waifu1.id, userId1);
+  const stats2 = await getBattleStats(waifu2.id, userId2);
+  
+  // Calcular poder de combate
+  const power1 = calculateBattlePower(waifu1, stats1);
+  const power2 = calculateBattlePower(waifu2, stats2);
+  
+  // Simulación de combate con elementos aleatorios
+  const rounds = [];
+  let hp1 = 100;
+  let hp2 = 100;
+  let currentRound = 1;
+  
+  while (hp1 > 0 && hp2 > 0 && currentRound <= 10) {
+    const damage1 = Math.max(5, Math.floor(power1 * (0.8 + Math.random() * 0.4) - (stats2.defense * 0.1)));
+    const damage2 = Math.max(5, Math.floor(power2 * (0.8 + Math.random() * 0.4) - (stats1.defense * 0.1)));
+    
+    hp2 -= damage1;
+    hp1 -= damage2;
+    
+    rounds.push({
+      round: currentRound,
+      attacker1: damage1,
+      attacker2: damage2,
+      hp1: Math.max(0, hp1),
+      hp2: Math.max(0, hp2)
+    });
+    
+    currentRound++;
+  }
+  
+  // Determinar ganador
+  const winner = hp1 > hp2 ? 1 : (hp2 > hp1 ? 2 : 0); // 0 = empate
+  
+  // Actualizar estadísticas y dar recompensas
+  const expReward1 = winner === 1 ? 50 : (winner === 0 ? 25 : 10);
+  const expReward2 = winner === 2 ? 50 : (winner === 0 ? 25 : 10);
+  
+  await addWaifuExp(waifu1.id, userId1, expReward1);
+  await addWaifuExp(waifu2.id, userId2, expReward2);
+  
+  // Actualizar cooldown
+  await db.run(`
+    INSERT OR REPLACE INTO user_battle_stats (user_id, last_battle, battles_won, battles_lost, battles_total)
+    VALUES (?, CURRENT_TIMESTAMP, ?, ?, ?)
+  `, [
+    userId1,
+    winner === 1 ? 1 : 0,
+    winner === 1 ? 0 : 1,
+    1
+  ]);
+  
+  await db.run(`
+    INSERT OR REPLACE INTO user_battle_stats (user_id, last_battle, battles_won, battles_lost, battles_total)
+    VALUES (?, CURRENT_TIMESTAMP, ?, ?, ?)
+  `, [
+    userId2,
+    winner === 2 ? 1 : 0,
+    winner === 2 ? 0 : 1,
+    1
+  ]);
+  
+  return {
+    waifu1,
+    waifu2,
+    userId1,
+    userId2,
+    rounds,
+    winner,
+    finalHp1: Math.max(0, hp1),
+    finalHp2: Math.max(0, hp2),
+    expReward1,
+    expReward2
+  };
+}
+
+/**
+ * Obtiene estadísticas de combate de una waifu
+ */
+async function getBattleStats(characterId, userId) {
+  const level = await getWaifuLevel(characterId, userId);
+  const stats = await getWaifuStats(characterId, userId);
+  
+  return {
+    level,
+    attack: Math.floor(10 + level * 2 + stats.affection * 0.1),
+    defense: Math.floor(5 + level * 1.5 + stats.happiness * 0.05),
+    speed: Math.floor(8 + level * 1.2 + (100 - stats.hunger) * 0.05),
+    hp: 100 + level * 5
+  };
+}
+
+/**
+ * Calcula el poder de combate total
+ */
+function calculateBattlePower(waifu, stats) {
+  const rarityBonus = getRarezaBonus(waifu.price);
+  const basePower = (stats.attack * 2) + stats.defense + (stats.speed * 0.5);
+  return Math.floor(basePower * rarityBonus);
+}
+
+/**
+ * Muestra el resultado del combate
+ */
+async function displayBattleResult(sock, chatId, m, result, userId1, userId2) {
+  const { waifu1, waifu2, rounds, winner, finalHp1, finalHp2, expReward1, expReward2 } = result;
+  
+  let battleReport = `⚔️ *BATALLA DE WAIFUS* ⚔️\n\n`;
+  battleReport += `${getRarezaEmoji(waifu1.price)} *${waifu1.name}* vs ${getRarezaEmoji(waifu2.price)} *${waifu2.name}*\n\n`;
+  
+  // Resumen de rondas
+  battleReport += `📜 *Resumen del Combate:*\n`;
+  rounds.forEach((round, index) => {
+    if (index < 3 || index === rounds.length - 1) { // Mostrar primeras 3 y última ronda
+      battleReport += `Ronda ${round.round}: ${waifu1.name} (-${round.attacker1}) HP: ${round.hp1} | ${waifu2.name} (-${round.attacker2}) HP: ${round.hp2}\n`;
+    } else if (index === 3 && rounds.length > 4) {
+      battleReport += `...\n`;
+    }
+  });
+  
+  battleReport += `\n🏆 *Resultado Final:*\n`;
+  
+  if (winner === 1) {
+    battleReport += `🎉 *${waifu1.name} (@${userId1.split('@')[0]}) ha ganado!*\n`;
+    battleReport += `💀 ${waifu2.name} ha sido derrotada\n`;
+  } else if (winner === 2) {
+    battleReport += `🎉 *${waifu2.name} (@${userId2.split('@')[0]}) ha ganado!*\n`;
+    battleReport += `💀 ${waifu1.name} ha sido derrotada\n`;
+  } else {
+    battleReport += `🤝 *¡EMPATE!* Ambas waifus han caído\n`;
+  }
+  
+  battleReport += `\n💰 *Recompensas:*\n`;
+  battleReport += `${waifu1.name}: +${expReward1} EXP\n`;
+  battleReport += `${waifu2.name}: +${expReward2} EXP\n`;
+  
+  battleReport += `\n⚠️ *Cooldown:* 1 hora hasta el próximo combate`;
+  
+  await sock.sendMessage(chatId, {
+    text: battleReport,
+    mentions: [userId1, userId2]
+  }, { quoted: m });
+}
+
