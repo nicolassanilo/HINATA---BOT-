@@ -1,7 +1,7 @@
 {
   "llave": "HINATA123",
   "version": "1.1.0",
-  "propietario": "+54 9 2604035392",
+  "propietario": "+5492604035392",
   "antiPrivado": true,
   "tenorApiKey": "AIzaSyC9am-_xG3PuGQK9sJMrPY2mSF12y1I1XA",
   "pexelsApiKey": "r2Dmg3gwzU6LEjrpC2hIvMQzQ30LAQS4yi75RDZTLyZS6anuzuQRJt9o",
@@ -17,7 +17,7 @@
     "groupBurstLimit": 20,
     "groupBurstSeconds": 60
   },
-  "ownerJid": "+54 9 2604035392",
+  "ownerJid": "+5492604035392",
   "authMethod": "qr",
-  "phoneNumber": "+54 9 2604035392"
+  "phoneNumber": "+5492604035392"
 }
