@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  hinata-bot:
+    build: .
+    container_name: hinata-bot-v3
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Argentina/Buenos_Aires
+      # Variables de configuración del bot (ajustar según necesidad)
+      - BOT_OWNER_NUMBER=549XXXXXXXXXX@c.us
+      - BOT_PREFIX=.
+      - SESSION_NAME=HINATA-BOT
+      - PEXELS_API_KEY=tu_api_key_aqui
+      - GEMINI_API_KEY=tu_gemini_key_aqui
+    volumes:
+      # Persistencia de datos importantes
+      - ./data:/app/data
+      - ./media:/app/media
+      - ./logs:/app/logs
+    ports:
+      - "3000:3000"  # Si el bot tiene interfaz web
+    networks:
+      - bot-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Bot health check')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Base de datos opcional (si se necesita persistencia)
+  # mongodb:
+  #   image: mongo:6
+  #   container_name: hinata-bot-db
+  #   restart: unless-stopped
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=admin
+  #     - MONGO_INITDB_ROOT_PASSWORD=password123
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   networks:
+  #     - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+# volumes:
+#   mongodb_data:

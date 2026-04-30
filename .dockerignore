@@ -1,0 +1,75 @@
+# Node modules (se instalarán en el contenedor)
+node_modules/
+npm-debug.log*
+
+# Archivos de logs
+logs/
+*.log
+
+# Datos temporales y caché
+.cache/
+tmp/
+temp/
+*.tmp
+
+# Archivos de configuración local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de desarrollo y testing
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Archivos de Git
+.git/
+.gitignore
+README.md
+
+# Archivos de documentación
+docs/
+*.md
+
+# Archivos de backup y antiguos
+*_old.js
+*_backup.js
+*.bak
+
+# Archivos de IDE y editores
+.vscode/
+.idea/
+*.sublime-*
+
+# Archivos de build y distribución
+dist/
+build/
+
+# Archivos específicos del proyecto que no deben ir al contenedor
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Base de datos locales (si existen)
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de configuración sensibles
+config.json
+credentials.json
+
+# Archivos de sesión de WhatsApp (si se generan localmente)
+session-*
+*.session
