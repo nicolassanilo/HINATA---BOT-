@@ -52,39 +52,57 @@ function normalizePhoneNumber(number) {
 
 // Función mejorada para verificar si es propietario
 function isOwner(senderId, config) {
-  if (!senderId || !config) return false;
-  
-  const normalizedSenderId = normalizePhoneNumber(senderId);
-  
-  // Verificar ownerJid
-  if (config.ownerJid) {
-    const normalizedOwnerJid = normalizePhoneNumber(config.ownerJid);
-    if (normalizedSenderId.includes(normalizedOwnerJid.replace('@s.whatsapp.net', ''))) {
-      logger.info(`Propietario verificado via ownerJid: ${normalizedOwnerId}`);
-      return true;
+    if (!senderId || !config) return false;
+    
+    console.log(`[RELOAD DEBUG] Verificando propietario:`);
+    console.log(`[RELOAD DEBUG] Sender ID: ${senderId}`);
+    console.log(`[RELOAD DEBUG] Config:`, {
+        propietario: config.propietario,
+        ownerJid: config.ownerJid,
+        phoneNumber: config.phoneNumber
+    });
+    
+    const normalizedSenderId = normalizePhoneNumber(senderId);
+    console.log(`[RELOAD DEBUG] Sender ID normalizado: ${normalizedSenderId}`);
+    
+    // Verificar propietario
+    if (config.propietario) {
+        const normalizedPropietario = normalizePhoneNumber(config.propietario);
+        console.log(`[RELOAD DEBUG] Propietario normalizado: ${normalizedPropietario}`);
+        
+        if (normalizedSenderId.includes(normalizedPropietario) || normalizedPropietario.includes(normalizedSenderId)) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia via propietario`);
+            return true;
+        }
     }
-  }
-  
-  // Verificar propietario
-  if (config.propietario) {
-    const normalizedPropietario = normalizePhoneNumber(config.propietario);
-    if (normalizedSenderId.includes(normalizedPropietario)) {
-      logger.info(`Propietario verificado via propietario: ${normalizedSenderId}`);
-      return true;
+    
+    // Verificar ownerJid
+    if (config.ownerJid) {
+        const normalizedOwnerJid = normalizePhoneNumber(config.ownerJid);
+        console.log(`[RELOAD DEBUG] OwnerJid normalizado: ${normalizedOwnerJid}`);
+        
+        const ownerJidWithoutSuffix = normalizedOwnerJid.replace('@s.whatsapp.net', '');
+        console.log(`[RELOAD DEBUG] OwnerJid sin suffix: ${ownerJidWithoutSuffix}`);
+        
+        if (normalizedSenderId.includes(ownerJidWithoutSuffix) || ownerJidWithoutSuffix.includes(normalizedSenderId)) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid`);
+            return true;
+        }
     }
-  }
-  
-  // Verificar phoneNumber
-  if (config.phoneNumber) {
-    const normalizedPhoneNumber = normalizePhoneNumber(config.phoneNumber);
-    if (normalizedSenderId.includes(normalizedPhoneNumber)) {
-      logger.info(`Propietario verificado via phoneNumber: ${normalizedSenderId}`);
-      return true;
+    
+    // Verificar phoneNumber
+    if (config.phoneNumber) {
+        const normalizedPhoneNumber = normalizePhoneNumber(config.phoneNumber);
+        console.log(`[RELOAD DEBUG] PhoneNumber normalizado: ${normalizedPhoneNumber}`);
+        
+        if (normalizedSenderId.includes(normalizedPhoneNumber) || normalizedPhoneNumber.includes(normalizedSenderId)) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia via phoneNumber`);
+            return true;
+        }
     }
-  }
-  
-  logger.info(`Verificación fallida para: ${normalizedSenderId}`);
-  return false;
+    
+    console.log(`[RELOAD DEBUG] ❌ Ninguna coincidencia encontrada`);
+    return false;
 }
 
 // Función para ejecutar recarga con reintentos
