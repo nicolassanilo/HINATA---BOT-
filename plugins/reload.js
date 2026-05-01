@@ -62,48 +62,33 @@ function isOwner(senderId, config) {
         phoneNumber: config.phoneNumber
     });
     
-    const normalizedSenderId = normalizePhoneNumber(senderId);
+    // Verificación directa con formato completo @s.whatsapp.net
+    const validOwnerIds = [
+        config.propietario,
+        config.ownerJid,
+        config.phoneNumber
+    ].filter(id => id && id.includes('@s.whatsapp.net'));
+    
+    console.log(`[RELOAD DEBUG] IDs válidos del propietario:`, validOwnerIds);
+    
+    // Verificación exacta del senderId
+    for (const ownerId of validOwnerIds) {
+        if (senderId === ownerId) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia exacta con: ${ownerId}`);
+            return true;
+        }
+    }
+    
+    // Verificación por inclusión (para grupos donde el ID viene con @g.us)
+    const normalizedSenderId = senderId.replace('@g.us', '').replace('@s.whatsapp.net', '');
     console.log(`[RELOAD DEBUG] Sender ID normalizado: ${normalizedSenderId}`);
     
-    // Verificar propietario
-    if (config.propietario) {
-        const normalizedPropietario = normalizePhoneNumber(config.propietario);
-        console.log(`[RELOAD DEBUG] Propietario normalizado: ${normalizedPropietario}`);
+    for (const ownerId of validOwnerIds) {
+        const normalizedOwnerId = ownerId.replace('@s.whatsapp.net', '');
+        console.log(`[RELOAD DEBUG] Verificando contra: ${normalizedOwnerId}`);
         
-        if (normalizedSenderId.includes(normalizedPropietario) || normalizedPropietario.includes(normalizedSenderId)) {
-            console.log(`[RELOAD DEBUG] ✅ Coincidencia via propietario`);
-            return true;
-        }
-    }
-    
-    // Verificar ownerJid
-    if (config.ownerJid) {
-        const normalizedOwnerJid = normalizePhoneNumber(config.ownerJid);
-        console.log(`[RELOAD DEBUG] OwnerJid normalizado: ${normalizedOwnerJid}`);
-        
-        const ownerJidWithoutSuffix = normalizedOwnerJid.replace('@s.whatsapp.net', '');
-        console.log(`[RELOAD DEBUG] OwnerJid sin suffix: ${ownerJidWithoutSuffix}`);
-        
-        // Comparar sin @s.whatsapp.net
-        if (normalizedSenderId.includes(ownerJidWithoutSuffix) || ownerJidWithoutSuffix.includes(normalizedSenderId)) {
-            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid (sin suffix)`);
-            return true;
-        }
-        
-        // Comparar con @s.whatsapp.net completo
-        if (normalizedSenderId.includes(normalizedOwnerJid) || normalizedOwnerJid.includes(normalizedSenderId)) {
-            console.log(`[RELOAD DEBUG] ✅ Coincidencia via ownerJid (con suffix)`);
-            return true;
-        }
-    }
-    
-    // Verificar phoneNumber
-    if (config.phoneNumber) {
-        const normalizedPhoneNumber = normalizePhoneNumber(config.phoneNumber);
-        console.log(`[RELOAD DEBUG] PhoneNumber normalizado: ${normalizedPhoneNumber}`);
-        
-        if (normalizedSenderId.includes(normalizedPhoneNumber) || normalizedPhoneNumber.includes(normalizedSenderId)) {
-            console.log(`[RELOAD DEBUG] ✅ Coincidencia via phoneNumber`);
+        if (normalizedSenderId.includes(normalizedOwnerId) || normalizedOwnerId.includes(normalizedSenderId)) {
+            console.log(`[RELOAD DEBUG] ✅ Coincidencia por inclusión con: ${ownerId}`);
             return true;
         }
     }
