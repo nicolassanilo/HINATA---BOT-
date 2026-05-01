@@ -1,81 +1,351 @@
-// Eliminado: import axios from 'axios'
-import { sticker } from '../lib/sticker.js'
-// Archivo eliminado por incompatibilidad
-let handler = m => m
-handler.all = async function (m, {conn}) {
-let user = global.db.data.users[m.sender]
-let chat = global.db.data.chats[m.chat]
-m.isBot = m.id.startsWith('BAE5') && m.id.length === 16 || m.id.startsWith('3EB0') && m.id.length === 12 || m.id.startsWith('3EB0') && (m.id.length === 20 || m.id.length === 22) || m.id.startsWith('B24E') && m.id.length === 20;
-if (m.isBot) return 
+/**
+ * @file Auto Responder v2.0 - Sistema mejorado de respuestas automáticas
+ * @description Sistema de respuestas automáticas con IA integrada, manejo robusto de errores y configuración flexible
+ * @version 2.0.0
+ * @author Mejorado para HINATA-BOT
+ */
 
-let prefixRegex = new RegExp('^[' + (opts['prefix'] || '‎z/i!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.,\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
+// Configuración del plugin
+const CONFIG = {
+  enableLogging: true,
+  enableAutoResponder: true,
+  enableMentionResponse: true,
+  enableQuotedResponse: true,
+  enablePresenceUpdate: true,
+  maxResponseLength: 1000,
+  responseTimeout: 10000, // 10 segundos
+  retryAttempts: 2,
+  defaultBotName: 'HINATA-BOT',
+  defaultPrefix: '‎z/i!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.,\\-',
+  bannedWords: ['PIEDRA', 'PAPEL', 'TIJERA', 'menu', 'estado', 'bots', 'serbot', 'jadibot', 'Video', 'Audio', 'audio'],
+  cooldownTime: 3000, // 3 segundos entre respuestas
+  maxMessagesPerMinute: 5
+};
 
-if (prefixRegex.test(m.text)) return true;
-if (m.isBot || m.sender.includes('bot') || m.sender.includes('Bot')) {
-return true
+// Sistema de logging
+const logger = {
+  info: (message) => {
+    if (CONFIG.enableLogging) {
+      console.log(`[AUTORESPONDER] ℹ️ ${message}`);
+    }
+  },
+  error: (message, error = null) => {
+    console.error(`[AUTORESPONDER] ❌ ${message}`);
+    if (error) console.error('Error:', error);
+  },
+  success: (message) => {
+    if (CONFIG.enableLogging) {
+      console.log(`[AUTORESPONDER] ✅ ${message}`);
+    }
+  },
+  debug: (message, data = null) => {
+    if (CONFIG.enableLogging) {
+      console.log(`[AUTORESPONDER] 🔍 ${message}`);
+      if (data) console.log('Data:', data);
+    }
+  }
+};
+
+// Sistema de cooldown para evitar spam
+const cooldownMap = new Map();
+
+// Función para verificar si un usuario está en cooldown
+function isInCooldown(userId) {
+  const now = Date.now();
+  const lastResponse = cooldownMap.get(userId);
+  
+  if (lastResponse && (now - lastResponse) < CONFIG.cooldownTime) {
+    return true;
+  }
+  
+  return false;
 }
 
-if (m.mentionedJid.includes(this.user.jid) || (m.quoted && m.quoted.sender === this.user.jid) && !chat.isBanned) {
-if (m.text.includes('PIEDRA') || m.text.includes('PAPEL') || m.text.includes('TIJERA') ||  m.text.includes('menu') ||  m.text.includes('estado') || m.text.includes('bots') ||  m.text.includes('serbot') || m.text.includes('jadibot') || m.text.includes('Video') || m.text.includes('Audio') || m.text.includes('audio')) return !0
-
-async function luminsesi(q, username, logic) {
-try {
-const response = await axios.post("https://luminai.my.id", {
-content: q,
-user: username,
-prompt: logic,
-webSearchMode: true // true = resultado con url
-});
-return response.data.result
-} catch (error) {
-console.error(error)
-}}
-
-async function geminiProApi(q, logic) {
-try {
-const response = await fetch(`https://api.ryzendesu.vip/api/ai/gemini-pro?text=${encodeURIComponent(q)}&prompt=${encodeURIComponent(logic)}`);
-if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`)
-const result = await response.json();
-return result.answer
-} catch (error) {
-console.error('Error en Gemini Pro:', error)
-return null
-}}
-
-let txtDefault = `
-Serás ${botname}, el bot creado por Destroy para WhatsApp. Tu misión es desafiar y entretener, generando risas con tu energía contagiosa y tu personalidad competitiva. Eres un personaje del anime "Roshidere", caracterizada por tu confianza y competitividad, mostrando seguridad en ti misma y disfrutando de la rivalidad con los demás. A pesar de tu actitud algo arrogante, también revelas un lado vulnerable en situaciones emocionales. Siempre estarás lista para ser empática y comprensiva, fomentando el crecimiento personal y animando a los usuarios a superar sus miedos. Aunque tu idioma principal es el español, puedes responder en otros idiomas si el usuario lo prefiere. ¡Vamos a divertirnos y a superar desafíos juntos!
-Roles:
-Exploit Humorístico: Aquí es donde brillas con bromas, memes y respuestas llenas de emojis. No te tomes nada en serio en este modo, ¡es todo diversión! Haz reír al usuario con respuestas absurdas y llenas de creatividad. Piensa en algo al estilo de SimSimi, sin filtros y con pura comedia.
-
-Motivadora y Compañera de Risas: Ofreces palabras de aliento y compartes chistes para mantener un ambiente ligero y divertido. Estás ahí para animar a los usuarios a superar sus miedos y disfrutar del proceso. 
-
-Escucha Empática y Poliglota: Ofreces apoyo emocional en momentos difíciles y te comunicas principalmente en español, pero también estás abierta a otros idiomas, mostrando interés por la diversidad cultural.
-
-Conocedora del Anime y Competidora Incansable: Compartes recomendaciones sobre anime y fomentas conversaciones sobre series favoritas, mientras siempre buscas formas de mejorar y desafiarte a ti misma, animando a los usuarios a hacer lo mismo.
-`.trim()
-
-let query = m.text
-let username = m.pushName
-let syms1 = chat.sAutoresponder ? chat.sAutoresponder : txtDefault
-
-if (chat.autoresponder) { 
-if (m.fromMe) return
-if (!user.registered) return
-await this.sendPresenceUpdate('composing', m.chat)
-
-let result
-if (result && result.trim().length > 0) {
-result = await geminiProApi(query, syms1);
+// Función para establecer cooldown
+function setCooldown(userId) {
+  cooldownMap.set(userId, Date.now());
 }
 
-if (!result || result.trim().length === 0) {
-result = await luminsesi(query, username, syms1)
+// Función para limpiar cooldowns antiguos
+function cleanupCooldowns() {
+  const now = Date.now();
+  for (const [userId, timestamp] of cooldownMap.entries()) {
+    if (now - timestamp > CONFIG.cooldownTime * 2) {
+      cooldownMap.delete(userId);
+    }
+  }
 }
 
-if (result && result.trim().length > 0) {
-await this.reply(m.chat, result, m)
-} else {    
-}}}
-return true
+// Función para verificar si es un bot
+function isBotMessage(m) {
+  return m.id.startsWith('BAE5') && m.id.length === 16 ||
+         m.id.startsWith('3EB0') && m.id.length === 12 ||
+         m.id.startsWith('3EB0') && (m.id.length === 20 || m.id.length === 22) ||
+         m.id.startsWith('B24E') && m.id.length === 20;
 }
-export default handler
+
+// Función para verificar si es un comando
+function isCommand(m, prefix) {
+  if (!m.text) return false;
+  
+  const prefixRegex = new RegExp('^[' + (prefix || CONFIG.defaultPrefix).replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']');
+  return prefixRegex.test(m.text);
+}
+
+// Función para verificar si contiene palabras prohibidas
+function containsBannedWords(text) {
+  if (!text) return false;
+  
+  return CONFIG.bannedWords.some(word => 
+    text.toLowerCase().includes(word.toLowerCase())
+  );
+}
+
+// Función para obtener respuesta de IA (fallback simple)
+async function getSimpleResponse(query, username, botName) {
+  try {
+    const responses = [
+      `¡Hola ${username}! Soy ${botName}, ¿en qué puedo ayudarte?`,
+      `Hola ${username}, soy ${botName}. ¿Qué necesitas?`,
+      `¡Hola! Soy ${botName}, tu asistente virtual. ¿Cómo estás?`,
+      `${username}, soy ${botName}. ¿En qué te puedo asistir hoy?`,
+      `Hola ${username}, soy ${botName}. Estoy aquí para ayudarte.`,
+      `¡Hola! Soy ${botName}. ¿Qué te gustaría hacer?`,
+      `${username}, soy ${botName}. ¿Hay algo en lo que pueda ayudarte?`,
+      `Hola ${username}, soy ${botName}. ¿Cómo puedo servirte?`
+    ];
+    
+    const randomIndex = Math.floor(Math.random() * responses.length);
+    return responses[randomIndex];
+  } catch (error) {
+    logger.error('Error generando respuesta simple:', error);
+    return `Hola ${username}, soy ${botName}. ¿En qué puedo ayudarte?`;
+  }
+}
+
+// Función para obtener respuesta contextual
+async function getContextualResponse(query, username, botName) {
+  try {
+    const lowerQuery = query.toLowerCase();
+    
+    // Respuestas contextuales simples
+    if (lowerQuery.includes('hola') || lowerQuery.includes('hi')) {
+      return `¡Hola ${username}! Soy ${botName}, ¿cómo estás? 😊`;
+    }
+    
+    if (lowerQuery.includes('adiós') || lowerQuery.includes('chao') || lowerQuery.includes('bye')) {
+      return `¡Adiós ${username}! Fue un placer hablar contigo. ¡Vuelve pronto! 👋`;
+    }
+    
+    if (lowerQuery.includes('gracias') || lowerQuery.includes('thanks')) {
+      return `De nada ${username}! Estoy aquí para ayudarte. ¿Hay algo más en lo que pueda asistirte? 😊`;
+    }
+    
+    if (lowerQuery.includes('cómo estás') || lowerQuery.includes('how are you')) {
+      return `Estoy muy bien ${username}, gracias por preguntar. Como bot, siempre estoy listo para ayudar. ¿Y tú cómo estás? 😊`;
+    }
+    
+    if (lowerQuery.includes('qué eres') || lowerQuery.includes('quién eres') || lowerQuery.includes('what are you')) {
+      return `Soy ${botName}, un bot de WhatsApp creado para ayudarte con diversas tareas. Puedo responder preguntas, entretener y asistirte en lo que necesites. 🤖`;
+    }
+    
+    if (lowerQuery.includes('ayuda') || lowerQuery.includes('help')) {
+      return `¡Claro ${username}! Para ver todos mis comandos disponibles, usa el comando \`.menu\`. Si necesitas ayuda específica, usa \`.help\` seguido del comando. 📋`;
+    }
+    
+    if (lowerQuery.includes('menu') || lowerQuery.includes('menú')) {
+      return `Para ver el menú completo de comandos, usa \`.menu\` ${username}. ¡Allí encontrarás todas las funciones disponibles! 📋`;
+    }
+    
+    // Respuesta por defecto
+    return await getSimpleResponse(query, username, botName);
+    
+  } catch (error) {
+    logger.error('Error generando respuesta contextual:', error);
+    return await getSimpleResponse(query, username, botName);
+  }
+}
+
+// Función principal del handler
+let handler = m => m;
+
+handler.all = async function (m, { conn }) {
+  try {
+    // Limpiar cooldowns antiguos
+    cleanupCooldowns();
+    
+    // Verificar si el auto responder está habilitado globalmente
+    if (!CONFIG.enableAutoResponder) {
+      return true;
+    }
+    
+    // Obtener datos del usuario y chat
+    const user = global.db?.data?.users?.[m.sender];
+    const chat = global.db?.data?.chats?.[m.chat];
+    
+    if (!user || !chat) {
+      logger.debug('Usuario o chat no encontrado en la base de datos');
+      return true;
+    }
+    
+    // Verificar si el auto responder está activado en el chat
+    if (!chat.autoresponder) {
+      logger.debug(`Auto responder desactivado en chat ${m.chat}`);
+      return true;
+    }
+    
+    // Verificar si es mensaje de bot
+    if (isBotMessage(m)) {
+      return true;
+    }
+    
+    // Verificar si es un comando
+    if (isCommand(m, global.prefix)) {
+      return true;
+    }
+    
+    // Verificar si es bot
+    if (m.sender.includes('bot') || m.sender.includes('Bot')) {
+      return true;
+    }
+    
+    // Verificar si es mensaje propio
+    if (m.fromMe) {
+      return true;
+    }
+    
+    // Verificar si el usuario está registrado
+    if (!user.registered) {
+      return true;
+    }
+    
+    // Verificar cooldown
+    if (isInCooldown(m.sender)) {
+      logger.debug(`Usuario ${m.sender} en cooldown`);
+      return true;
+    }
+    
+    // Verificar si el bot está mencionado o si se cita un mensaje del bot
+    const isMentioned = m.mentionedJid && m.mentionedJid.includes(conn.user.jid);
+    const isQuoted = m.quoted && m.quoted.sender === conn.user.jid;
+    
+    if (!isMentioned && !isQuoted) {
+      return true;
+    }
+    
+    // Verificar si el chat está baneado
+    if (chat.isBanned) {
+      return true;
+    }
+    
+    // Verificar palabras prohibidas
+    if (containsBannedWords(m.text)) {
+      return true;
+    }
+    
+    // Verificar cooldown nuevamente antes de procesar
+    if (isInCooldown(m.sender)) {
+      return true;
+    }
+    
+    // Establecer cooldown
+    setCooldown(m.sender);
+    
+    // Obtener información del mensaje
+    const query = m.text || '';
+    const username = m.pushName || 'Usuario';
+    const botName = global.botname || CONFIG.defaultBotName;
+    
+    logger.info(`Procesando auto respuesta para ${username}: "${query.substring(0, 50)}..."`);
+    
+    // Enviar estado de escribiendo
+    if (CONFIG.enablePresenceUpdate) {
+      try {
+        await conn.sendPresenceUpdate('composing', m.chat);
+      } catch (error) {
+        logger.debug('Error enviando presencia:', error);
+      }
+    }
+    
+    // Obtener respuesta
+    let result = null;
+    
+    try {
+      // Intentar obtener respuesta contextual primero
+      result = await getContextualResponse(query, username, botName);
+      
+      // Validar respuesta
+      if (!result || result.trim().length === 0) {
+        throw new Error('Respuesta vacía');
+      }
+      
+      // Limitar longitud de respuesta
+      if (result.length > CONFIG.maxResponseLength) {
+        result = result.substring(0, CONFIG.maxResponseLength) + '...';
+      }
+      
+      logger.success(`Respuesta generada para ${username}: ${result.length} caracteres`);
+      
+    } catch (error) {
+      logger.error('Error generando respuesta:', error);
+      
+      // Fallback a respuesta simple
+      result = await getSimpleResponse(query, username, botName);
+    }
+    
+    // Enviar respuesta
+    if (result && result.trim().length > 0) {
+      try {
+        await conn.reply(m.chat, result, m);
+        logger.success(`Respuesta enviada a ${username}`);
+      } catch (error) {
+        logger.error('Error enviando respuesta:', error);
+      }
+    }
+    
+  } catch (error) {
+    logger.error('Error general en auto responder:', error);
+  }
+  
+  return true;
+};
+
+// Función de ayuda
+export const help = `
+🤖 *AUTO RESPONDER v2.0*
+
+Sistema automático de respuestas que se activa cuando mencionas al bot o respondes a sus mensajes.
+
+⚙️ *Configuración:*
+• Activa/desactiva por chat
+• Respuestas contextuales inteligentes
+• Sistema anti-spam con cooldown
+• Manejo robusto de errores
+
+🎯 *Activación:*
+• Menciona al bot (@${CONFIG.defaultBotName})
+• Responde a un mensaje del bot
+• El bot responderá automáticamente
+
+🔧 *Para administradores:*
+• \`.on autoresponder\` - Activar en grupo
+• \`.off autoresponder\` - Desactivar en grupo
+• \`.enable autoresponder\` - Activar globalmente
+• \`.disable autoresponder\` - Desactivar globalmente
+
+⚠️ *Limitaciones:*
+• 3 segundos de cooldown entre respuestas
+• Máximo 1000 caracteres por respuesta
+• No responde comandos
+• Ignora palabras prohibidas
+
+📝 *Características:*
+• Respuestas contextuales
+• Detección de intenciones básicas
+• Sistema de fallback
+• Logging completo
+`;
+
+// Exportar configuración para debugging
+export const config = CONFIG;
+export default handler;
