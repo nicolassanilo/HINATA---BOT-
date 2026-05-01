@@ -62,12 +62,12 @@ function isOwner(senderId, config) {
         phoneNumber: config.phoneNumber
     });
     
-    // Verificación directa con formato completo @s.whatsapp.net
+    // Verificación directa con formato completo (soporta @s.whatsapp.net, @lid, etc.)
     const validOwnerIds = [
         config.propietario,
         config.ownerJid,
         config.phoneNumber
-    ].filter(id => id && id.includes('@s.whatsapp.net'));
+    ].filter(id => id && (id.includes('@s.whatsapp.net') || id.includes('@lid')));
     
     console.log(`[RELOAD DEBUG] IDs válidos del propietario:`, validOwnerIds);
     
@@ -80,11 +80,11 @@ function isOwner(senderId, config) {
     }
     
     // Verificación por inclusión (para grupos donde el ID viene con @g.us)
-    const normalizedSenderId = senderId.replace('@g.us', '').replace('@s.whatsapp.net', '');
+    const normalizedSenderId = senderId.replace('@g.us', '').replace('@s.whatsapp.net', '').replace('@lid', '');
     console.log(`[RELOAD DEBUG] Sender ID normalizado: ${normalizedSenderId}`);
     
     for (const ownerId of validOwnerIds) {
-        const normalizedOwnerId = ownerId.replace('@s.whatsapp.net', '');
+        const normalizedOwnerId = ownerId.replace('@s.whatsapp.net', '').replace('@lid', '');
         console.log(`[RELOAD DEBUG] Verificando contra: ${normalizedOwnerId}`);
         
         if (normalizedSenderId.includes(normalizedOwnerId) || normalizedOwnerId.includes(normalizedSenderId)) {

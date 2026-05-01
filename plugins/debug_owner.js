@@ -40,8 +40,11 @@ export async function run(sock, msg, { text, command, args }) {
             config.propietario,
             config.ownerJid,
             config.phoneNumber
-        ].filter(id => id && id.includes('@s.whatsapp.net'));
+        ].filter(id => id && (id.includes('@s.whatsapp.net') || id.includes('@lid')));
         
+        console.log(`[DEBUG v2.0] IDs válidos del propietario:`, validOwnerIds);
+        
+        // Verificación exacta del senderId
         for (const ownerId of validOwnerIds) {
             if (senderId === ownerId) {
                 checks.exactMatch = true;
@@ -50,9 +53,9 @@ export async function run(sock, msg, { text, command, args }) {
         }
         
         // Verificación por inclusión
-        const normalizedSenderId = senderId.replace('@g.us', '').replace('@s.whatsapp.net', '');
+        const normalizedSenderId = senderId.replace('@g.us', '').replace('@s.whatsapp.net', '').replace('@lid', '');
         for (const ownerId of validOwnerIds) {
-            const normalizedOwnerId = ownerId.replace('@s.whatsapp.net', '');
+            const normalizedOwnerId = ownerId.replace('@s.whatsapp.net', '').replace('@lid', '');
             if (normalizedSenderId.includes(normalizedOwnerId) || normalizedOwnerId.includes(normalizedSenderId)) {
                 checks.inclusionMatch = true;
                 break;
