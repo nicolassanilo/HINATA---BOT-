@@ -7,13 +7,14 @@ export async function run(sock, m) {
 
   const menu = `
 ╔════════════════════════════╗
-║     🌟 HINATA-BOT v3.0 🌟     ║
-║   ¡Tu asistente virtual mejorado!   ║
+║     🌟 HINATA-BOT v4.0 🌟     ║
+║   ¡Tu asistente virtual evolucionado!   ║
 ╚════════════════════════════╝
 
 ╔════════════════════════════╗
 ║     📋 MENÚ PRINCIPAL     ║
 ║  💖 Sistema Waifu v3.0 Activo!  ║
+║  🕷️ Spider-X-API Integrada!  ║
 ╚════════════════════════════╝
 
 ╔═══💖 WAIFU SYSTEM v3.0 ═══╗
@@ -61,6 +62,14 @@ export async function run(sock, m) {
 ║    └ Estadísticas completas
 ║    └ Valor total, rarezas, top 3
 ║
+║ 🛒 *.tienda waifu*
+║    └ Tienda de waifus
+║    └ Compra con puntos del trabajo
+║
+║ 💳 *.comprar* <nombre/número>
+║    └ Compra waifu de la tienda
+║    └ Precios dinámicos por rareza
+║
 ║ 🎯 *Sistema de Niveles:*
 ║    └ 100 niveles máximos
 ║    └ Sistema EXP progresivo
@@ -78,6 +87,50 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
+╔═══🎵 MULTIMEDIA v4.0 ═══╗
+║
+║ 🎵 *.play* <URL o búsqueda>
+║    └ Descarga videos/audio YouTube
+║    └ MP4 (720p/1080p) y MP3
+║    └ Spider-X-API integrada
+║
+║ 🎵 *.yt* <URL o búsqueda>
+║    └ Alternativa de .play
+║    └ Mismas funciones
+║
+║ 🎥 *.youtube* <URL> [calidad]
+║    └ Descarga videos YouTube
+║    └ Spider-X v4.0 con 4 APIs
+║    └ Calidades: 360p-1080p
+║
+║ 🎥 *.ytvideo* <URL> [calidad]
+║    └ Alternativa de .youtube
+║
+║ 🎥 *.ytdl* <URL> [calidad]
+║    └ Abreviatura de youtube
+║
+║ 🎥 *.ytd* <URL> [calidad]
+║    └ Versión corta de youtube
+║
+║ 🎥 *.spideryt* <URL> [calidad]
+║    └ Versión Spider-X
+║
+║ 🎵 *.musica* <canción/URL>
+║    └ Descarga música (MP3, WAV, etc.)
+║    └ YouTube, SoundCloud, TikTok
+║
+║ 🖼️ *.sticker*
+║    └ Crea stickers de imagen/video
+║
+║ 🎭 *.gif* <texto>
+║    └ Busca y envía GIFs animados
+║
+║ 🔧 *.setupyoutube*
+║    └ Guía configuración API YouTube
+║    └ Spider-X-API setup
+║
+╚════════════════════╝
+
 ╔═══🔍 BÚSQUEDAS ═══╗
 ║
 ║ 🔎 *.google* <texto>
@@ -92,24 +145,6 @@ export async function run(sock, m) {
 ║
 ║ 🖼️ *.waifurandom*
 ║    └ Waifus aleatorios (legacy)
-║
-╚════════════════════╝
-
-╔═══🎵 MULTIMEDIA ═══╗
-║
-║ 🎵 *.musica* <canción/URL>
-║    └ Descarga música (MP3, WAV, etc.)
-║    └ YouTube, SoundCloud, TikTok
-║
-║ 🎥 *.youtube* <URL>
-║    └ Descarga videos de YouTube
-║    └ Con límite de tamaño (50 MB)
-║
-║ 🖼️ *.sticker*
-║    └ Crea stickers de imagen/video
-║
-║ 🎭 *.gif* <texto>
-║    └ Busca y envía GIFs animados
 ║
 ╚════════════════════╝
 
@@ -138,7 +173,7 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔═══🎭 ACCIONES ANIME ═══╗
+╔═══🎭 ACCIONES ANIME v4.0 ═══╗
 ║
 ║ 😢 *Emociones Negativas:*
 ║ • *.angry* / *.enojado*
@@ -149,16 +184,35 @@ export async function run(sock, m) {
 ║ • *.blush* / *.sonrojarse*
 ║ • *.bleh* / *.lengua*
 ║ • *.dance* / *.bailar*
+║ • *.smile* / *.sonreir*
+║ • *.laugh* / *.reir*
+║ • *.wink* / *.guiñar*
 ║
 ║ 💕 *Cariñosas:*
 ║ • *.cuddle* / *.acurrucarse*
 ║ • *.bite* / *.morder*
 ║ • *.cafe* / *.coffe*
 ║ • *.bath* / *.bañarse*
+║ • *.feed* / *.alimentar*
+║ • *.pat* / *.acariciar*
+║ • *.hug* / *.abrazar*
+║ • *.kiss* / *.besar*
 ║
 ║ 🌙 *Saludos del Día:*
 ║ • *.noche* / *.noches* / *.nights*
 ║ • *.dia* / *.dias* / *.days*
+║ • *.buenas_noches*
+║ • *.buenos_días*
+║
+║ ⚡ *Acciones Divertidas:*
+║ • *.slap* / *.bofetada*
+║ • *.kick* / *.patada*
+║ • *.poke* / *.picar*
+║ • *.tickle* / *.cosquillas*
+║ • *.punch* / *.pegar*
+║ • *.think* / *.pensar*
+║ • *.sleep* / *.dormir*
+║ • *.wave* / *.saludar*
 ║
 ╚════════════════════╝
 
@@ -191,7 +245,7 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔═══💰 ECONOMÍA ═══╗
+╔═══💰 ECONOMÍA v4.0 ═══╗
 ║
 ║ 💳 *.saldo*
 ║    └ Consulta tus puntos
@@ -222,7 +276,7 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔═══👥 GRUPOS ═══╗
+╔═══👥 GRUPOS v4.0 ═══╗
 ║
 ║ 🚫 *.kick* @usuario
 ║    └ Expulsa miembro (admins)
@@ -247,6 +301,10 @@ export async function run(sock, m) {
 ║
 ║ 🏀 *.tomboys* [número]
 ║    └ Lista tomboys aleatorios
+║
+║ 🔍 *.debugowner*
+║    └ Diagnóstico de propietario
+║    └ Verificación de permisos
 ║
 ╚════════════════════╝
 
@@ -290,10 +348,14 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔═══⚙️ BOT ADMIN ═══╗
+╔═══⚙️ BOT ADMIN v4.0 ═══╗
 ║
-║ 🔄 *.reload*
+║ 🔄 *.reload* / *.updateplugins*
 ║    └ Recarga plugins (owner)
+║    └ Spider-X-API v4.0
+║
+║ 🔄 *.recargar*
+║    └ Versión en español de .reload
 ║
 ║ ⚡ *.cmd* <on|off> <comando>
 ║    └ Activa/desactiva comandos
@@ -301,19 +363,26 @@ export async function run(sock, m) {
 ║ ⏱️ *.setcooldown* <clave> <valor>
 ║    └ Configura cooldowns
 ║
+║ 🔍 *.testowner*
+║    └ Verificación de propietario
+║    └ Sistema mejorado
+║
 ╚════════════════════╝
 
 ╔════════════════════════════╗
 ║ 💡 Usa .help <comando> para más info ║
-║ 🎮 Total: 80+ comandos disponibles  ║
-║ 🌟 ¡Disfruta de HINATA-BOT v3.0!  ║
+║ 🎮 Total: 100+ comandos disponibles  ║
+║ 🌟 ¡Disfruta de HINATA-BOT v4.0!  ║
+║ 🕷️ Spider-X-API: 4 APIs activas  ║
 ╚════════════════════════════╝
 
 ╔════════════════════════════╗
 ║ 👨‍💻 Creado por: nicolassanilo  ║
-║ 📱 Versión: 3.0.0               ║
+║ 📱 Versión: 4.0.0               ║
 ║ ⚡ Estado: 🟢 Online           ║
 ║ 💖 Sistema Waifu: ✅ Activo     ║
+║ 🕷️ Spider-X-API: ✅ Integrada   ║
+║ 🎵 YouTube Downloader: ✅ v4.0  ║
 ╚════════════════════════════╝
 `;
 
