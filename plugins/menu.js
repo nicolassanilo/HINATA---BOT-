@@ -87,58 +87,10 @@ export async function run(sock, m) {
 ║
 ╚════════════════════╝
 
-╔═══🎵 MULTIMEDIA v4.0 ═══╗
-║
-║ 🎵 *.play* <URL o búsqueda>
-║    └ Descarga videos/audio YouTube
-║    └ MP4 (720p/1080p) y MP3
-║    └ Spider-X-API integrada
-║
-║ 🎵 *.yt* <URL o búsqueda>
-║    └ Alternativa de .play
-║    └ Mismas funciones
-║
-║ 🎥 *.youtube* <URL> [calidad]
-║    └ Descarga videos YouTube
-║    └ Spider-X v4.0 con 4 APIs
-║    └ Calidades: 360p-1080p
-║
-║ 🎥 *.ytvideo* <URL> [calidad]
-║    └ Alternativa de .youtube
-║
-║ 🎥 *.ytdl* <URL> [calidad]
-║    └ Abreviatura de youtube
-║
-║ 🎥 *.ytd* <URL> [calidad]
-║    └ Versión corta de youtube
-║
-║ 🎥 *.spideryt* <URL> [calidad]
-║    └ Versión Spider-X
-║
-║ 🎵 *.musica* <canción/URL>
-║    └ Descarga música (MP3, WAV, etc.)
-║    └ YouTube, SoundCloud, TikTok
-║
-║ 🖼️ *.sticker*
-║    └ Crea stickers de imagen/video
-║
-║ 🎭 *.gif* <texto>
-║    └ Busca y envía GIFs animados
-║
-║ 🔧 *.setupyoutube*
-║    └ Guía configuración API YouTube
-║    └ Spider-X-API setup
-║
-╚════════════════════╝
-
-╔═══🔍 BÚSQUEDAS ═══╗
+╔═══ BÚSQUEDAS ═══╗
 ║
 ║ 🔎 *.google* <texto>
 ║    └ Busca en Google
-║
-║ 🎬 *.anime* <nombre>
-║    └ Info de anime o imágenes locales
-║    └ Ej: .anime hinata
 ║
 ║ 📌 *.pinterest* <texto>
 ║    └ Busca imágenes en Pinterest
@@ -146,32 +98,14 @@ export async function run(sock, m) {
 ║ 🖼️ *.waifurandom*
 ║    └ Waifus aleatorios (legacy)
 ║
-╚════════════════════╝
+╚══════════════════╝
 
 ╔═══🤖 INTELIGENCIA ARTIFICIAL ═══╗
-║
-║ 🤖 *.ia* <pregunta>
-║    └ Chat con IA avanzada
-║
-║ 🔮 *.gemini* <pregunta>
-║    └ Gemini AI
-║
-║ 🦙 *.llama* <texto>
-║    └ Meta Llama AI
 ║
 ║ 💬 *.simi* / *.bot* <texto>
 ║    └ Simi AI conversacional
 ║
-║ 🎨 *.dalle* <descripción>
-║    └ Genera imágenes con IA
-║
-║ 🌈 *.flux* <descripción>
-║    └ Genera imágenes Flux AI
-║
-║ 📝 *.text2img* <descripción>
-║    └ Texto a imagen
-║
-╚════════════════════╝
+╚══════════════════╝
 
 ╔═══🎭 ACCIONES ANIME v4.0 ═══╗
 ║
@@ -371,19 +305,17 @@ export async function run(sock, m) {
 
 ╔════════════════════════════╗
 ║ 💡 Usa .help <comando> para más info ║
-║ 🎮 Total: 100+ comandos disponibles  ║
+║ 🎮 Total: 50+ comandos disponibles  ║
 ║ 🌟 ¡Disfruta de HINATA-BOT v4.0!  ║
-║ 🕷️ Spider-X-API: 4 APIs activas  ║
-╚════════════════════════════╝
+╚══════════════════════════╝
 
 ╔════════════════════════════╗
 ║ 👨‍💻 Creado por: nicolassanilo  ║
 ║ 📱 Versión: 4.0.0               ║
 ║ ⚡ Estado: 🟢 Online           ║
 ║ 💖 Sistema Waifu: ✅ Activo     ║
-║ 🕷️ Spider-X-API: ✅ Integrada   ║
-║ 🎵 YouTube Downloader: ✅ v4.0  ║
-╚════════════════════════════╝
+║ 🎯 Bot Optimizado: ✅ Sin descargas/IA  ║
+╚══════════════════════════╝
 `;
 
   const imgPath = './media/menu.jpg';
