@@ -78,5 +78,651 @@
     "image_url": ["https://i.ibb.co/nNFW4wbw/Nezuko-Kamado.jpg",
                   "https://i.ibb.co/HpCMzkQR/Nezuko-Kamado-2.jpg"],
     "price": 23000
+  },
+  {
+    "id": 11,
+    "name": "Yae Miko",
+    "anime": "Genshin impact",
+    "image_url": ["https://i.ibb.co/5Wj4xQs0/yae-miko.jpg",
+                  "https://i.ibb.co/4ZyCGJGx/yae-miko-2.jpg"],
+    "price": 17000
+  },
+  {
+    "id": 12,
+    "name": "Beidou",
+    "anime": "Genshin impact",
+    "image_url": ["https://i.ibb.co/0yr0JHWp/Beiudou-2.jpg",
+                  "https://i.ibb.co/k28YD9K3/Beiudou.jpg"],
+    "price": 16500
+  },
+  {
+    "id": 13,
+    "name": "Raven",
+    "anime": "Los jovenes titanes",
+    "image_url": ["https://i.ibb.co/cKpZfdqr/Raven.jpg",
+                  "https://i.ibb.co/SXz8Lghf/Raven-2.jpg"],
+    "price": 10000
+  },
+  {
+    "id": 14,
+    "name": "Starfire",
+    "anime": "Los jovenes titanes",
+    "image_url": ["https://i.ibb.co/zh8BGtT5/Starfire.jpg",
+                  "https://i.ibb.co/S7PFGmDM/Starfire-3.jpg"],
+    "price": 11000
+  },
+  {
+    "id": 15,
+    "name": "Kushina",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/DfxgwP34/kushina.jpg", 
+                  "https://i.ibb.co/1tCGQyDq/kushina-2.jpg"],
+    "price": 5000
+  },
+  {
+    "id": 16,
+    "name": "Himawari",
+    "anime": "Boruto",
+    "image_url": ["https://i.ibb.co/YBCPSW2n/himawari.jpg",
+                  "https://i.ibb.co/bjcjSt7y/himawari-2.jpg"],
+    "price": 6000
+  },
+  {
+    "id": 17,
+    "name": "Sakura",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/hxWVNFfY/Sakura-2.jpg",
+                  "https://i.ibb.co/nqmzkgDQ/Sakura.jpg"],
+    "price": 15000
+  },
+  {
+    "id": 18,
+    "name": "Karin",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/SDH4M2Ht/Karin.jpg",
+                  "https://i.ibb.co/NGt5gjK/Karin-2.jpg"],
+    "price": 5500
+  },
+  {
+    "id": 19,
+    "name": "Sarada",
+    "anime": "Boruto",
+    "image_url": ["https://i.ibb.co/KjGKcrmD/sarada.jpg",
+                  "https://i.ibb.co/ccwfYZny/Sarada-2.jpg"],
+    "price": 5000
+  },
+  {
+    "id": 20,
+    "name": "Tsunade",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/sdrkn7Cd/tsunade-2.jpg",
+                  "https://i.ibb.co/mrBzZcWz/Tsunade.jpg"],
+    "price": 4000
+  },
+  {
+    "id": 21,
+    "name": "Ino Yamanaka",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/DDdRn4y1/ino-yamanaka.jpg",
+                  "https://i.ibb.co/WpsBqg36/ino-yamanaka-2.jpg"],
+    "price": 3000
+  },
+  {
+    "id": 22,
+    "name": "Temari",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/fYHJ60bz/Temari-2.jpg",
+                  "https://i.ibb.co/99PRz0TY/temari.jpg"],
+    "price": 3500
+  },
+  {
+    "id": 23,
+    "name": "Konan",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/DgwxRLcF/Konan.jpg",
+                  "https://i.ibb.co/1Y016px2/Konan-2.jpg"],
+    "price": 2200
+  },
+  {
+    "id": 24,
+    "name": "Tenten",
+    "anime": "Naruto Shippuden",
+    "image_url": ["https://i.ibb.co/xSsd0v94/Ten-Ten.jpg",
+                  "https://i.ibb.co/5XtdJXGZ/Ten-Ten-2.jpg"],
+    "price": 1900
+  },
+  {
+    "id": 25,
+    "name": "Hatsune Miku",
+    "anime": "vocaloid",
+    "image_url": ["https://i.ibb.co/939wpQjw/Hatsune-Miku.jpg",
+                  "https://i.ibb.co/LD450SRn/Hatsune-Miku-2.jpg"],
+    "price": 9000
+  },
+  {
+    "id": 26,
+    "name": "Kurapika",
+    "anime": "Hunter X Hunter",
+    "image_url": ["https://i.ibb.co/YTFjYGwG/Kurapika-2.jpg",
+                  "https://i.ibb.co/LDdSDRBF/Kurapika.jpg"],
+    "price": 12000
+  },
+  {
+    "id": 27,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 28,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 29,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 30,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 31,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 32,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 33,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 34,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 35,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 36,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 37,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 38,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 39,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 40,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 41,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 42,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 43,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 44,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 45,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 46,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 47,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 48,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 49,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 50,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 51,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 52,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 53,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 54,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 55,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 56,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 57,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 58,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 59,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 60,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 61,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 62,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 63,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 64,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 65,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 66,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 67,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 68,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 69,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 70,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 71,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 72,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 73,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 74,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 75,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 76,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 77,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 78,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 79,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 80,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 81,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 82,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 83,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 84,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 85,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 86,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 87,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 88,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 89,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 90,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 91,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 92,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 93,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 94,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 95,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 96,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 97,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 98,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 99,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
+  },
+  {
+    "id": 100,
+    "name": "",
+    "anime": "",
+    "image_url": ["", ""],
+    "price": 0
   }
 ]
