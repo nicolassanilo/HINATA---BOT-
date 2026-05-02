@@ -13,11 +13,11 @@ export async function run(sock, m) {
 
 ╔════════════════════════════╗
 ║     📋 MENÚ PRINCIPAL     ║
-║  💖 Sistema Waifu v3.0 Activo!  ║
+║  💖 Sistema Waifu v4.0 Activo!  ║
 ║  🕷️ Spider-X-API Integrada!  ║
 ╚════════════════════════════╝
 
-╔═══💖 WAIFU SYSTEM v3.0 ═══╗
+╔═══💖 WAIFU SYSTEM v4.0 ═══╗
 ║
 ║ 🌟 *.waifus* [página|filtro]
 ║    └ Lista completa con paginación
@@ -38,7 +38,7 @@ export async function run(sock, m) {
 ║
 ║ 💕 *.interact* <nombre> <acción>
 ║    └ Interactúa con tu waifu
-║    └ Acciones: afectar, alimentar, jugar
+║    └ 15+ acciones disponibles
 ║    └ Ej: .interact Hinata Hyuga afectar
 ║
 ║ 🌟 *.evolucion* <nombre>
@@ -48,7 +48,6 @@ export async function run(sock, m) {
 ║ ⚔️ *.batalla* <waifu> @oponente <waifu>
 ║    └ Sistema de combate PvP
 ║    └ Estadísticas de batalla
-║    └ Cooldown: 1 hora
 ║
 ║ 💰 *.vender* <nombre>
 ║    └ Vende tu waifu (50% valor)
@@ -70,6 +69,38 @@ export async function run(sock, m) {
 ║    └ Compra waifu de la tienda
 ║    └ Precios dinámicos por rareza
 ║
+║ 🎉 *.evento*
+║    └ Eventos temporales activos
+║    └ Festivales y torneos especiales
+║
+║ 🎮 *.minijuego*
+║    └ Menú de minijuegos
+║    └ Adivinanzas, quizzes, trivia
+║
+║ 👥 *.social*
+║    └ Sistema social completo
+║    └ Amigos, visitas, regalos, fiestas
+║
+║ 💰 *.economia*
+║    └ Sistema económico avanzado
+║    └ Mercado, subastas, inversiones
+║
+║ 🎨 *.personalizar*
+║    └ Sistema de personalización
+║    └ Vestuario, accesorios, decoración
+║
+║ ⚔️ *.habilidades*
+║    └ Sistema de habilidades y clases
+║    └ Árbol de talentos, combate
+║
+║ 🏆 *.logros*
+║    └ Sistema de logros y trofeos
+║    └ Salón de la fama, marcas personales
+║
+║ 🗺️ *.mundo*
+║    └ Sistema de mundo y exploración
+║    └ Lugares, misiones, mazmorras
+║
 ║ 🎯 *Sistema de Niveles:*
 ║    └ 100 niveles máximos
 ║    └ Sistema EXP progresivo
@@ -85,7 +116,17 @@ export async function run(sock, m) {
 ║    └ ✨ Poco Común (5k+ pts)
 ║    └ ⚪ Común (<5k pts)
 ║
-╚════════════════════╝
+║ 🎯 *Nuevas Funcionalidades:*
+║    └ 🎉 Eventos temporales
+║    └ 🎮 Minijuegos interactivos
+║    └ 👥 Sistema social completo
+║    └ 💰 Economía avanzada
+║    └ 🎨 Personalización total
+║    └ ⚔️ Habilidades y clases
+║    └ 🏆 Sistema de logros
+║    └ 🗺️ Mundo y exploración
+║
+╚══════════════════════════╝
 
 ╔═══ BÚSQUEDAS ═══╗
 ║
@@ -305,7 +346,7 @@ export async function run(sock, m) {
 
 ╔════════════════════════════╗
 ║ 💡 Usa .help <comando> para más info ║
-║ 🎮 Total: 50+ comandos disponibles  ║
+║ 🎮 Total: 100+ comandos disponibles  ║
 ║ 🌟 ¡Disfruta de HINATA-BOT v4.0!  ║
 ╚══════════════════════════╝
 
@@ -313,8 +354,9 @@ export async function run(sock, m) {
 ║ 👨‍💻 Creado por: nicolassanilo  ║
 ║ 📱 Versión: 4.0.0               ║
 ║ ⚡ Estado: 🟢 Online           ║
-║ 💖 Sistema Waifu: ✅ Activo     ║
-║ 🎯 Bot Optimizado: ✅ Sin descargas/IA  ║
+║ 💖 Sistema Waifu: ✅ Activo v4.0 ║
+║ 🎯 Bot Optimizado: ✅ 8 nuevos módulos  ║
+║ 🚀 Plugins: 100+ comandos nuevos  ║
 ╚══════════════════════════╝
 `;
 
