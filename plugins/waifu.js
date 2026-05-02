@@ -1745,6 +1745,7 @@ function getRarezaBonus(price) {
   if (price >= 15000) return 1.5; // Super Raro: 150% bonus
   if (price >= 10000) return 1.3; // Raro: 130% bonus
   if (price >= 5000) return 1.1;  // Poco Común: 110% bonus
+  if (price >= 2000) return 1.05; // Común Plus: 105% bonus
   return 1.0; // Común: 100% (sin bonus)
 }
   
