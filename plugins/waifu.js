@@ -1401,6 +1401,7 @@ function getRarezaEmoji(price) {
   if (price >= 15000) return '⚡'; // Super Raro
   if (price >= 10000) return '🌟'; // Raro
   if (price >= 5000) return '✨';  // Poco Común
+  if (price >= 2000) return '🟢';  // Común Plus
   return '⚪'; // Común
 }
 
@@ -1415,6 +1416,7 @@ function getRarezaTexto(price) {
   if (price >= 15000) return 'Super Raro';
   if (price >= 10000) return 'Raro';
   if (price >= 5000) return 'Poco Común';
+  if (price >= 2000) return 'Común Plus';
   return 'Común';
 }
 
@@ -1429,6 +1431,7 @@ function getRarezaColor(price) {
   if (price >= 15000) return '#4169E1'; // Azul real (Super Raro)
   if (price >= 10000) return '#32CD32'; // Verde lima (Raro)
   if (price >= 5000) return '#87CEEB';  // Azul cielo (Poco Común)
+  if (price >= 2000) return '#90EE90';  // Verde claro (Común Plus)
   return '#808080'; // Gris (Común)
 }
 
