@@ -38,7 +38,7 @@ export async function run(sock, m) {
 ║
 ║ 💕 *.interact* <nombre> <acción>
 ║    └ Interactúa con tu waifu
-║    └ 15+ acciones disponibles
+║    └ 33+ acciones disponibles
 ║    └ Ej: .interact Hinata Hyuga afectar
 ║
 ║ 🌟 *.evolucion* <nombre>
@@ -61,7 +61,7 @@ export async function run(sock, m) {
 ║    └ Estadísticas completas
 ║    └ Valor total, rarezas, top 3
 ║
-║ 🛒 *.tienda waifu*
+║ 🛒 *.tienda* / *.shop*
 ║    └ Tienda de waifus
 ║    └ Compra con puntos del trabajo
 ║
@@ -69,7 +69,7 @@ export async function run(sock, m) {
 ║    └ Compra waifu de la tienda
 ║    └ Precios dinámicos por rareza
 ║
-║ 🎉 *.evento*
+║ 🎉 *.evento* / *.eventos*
 ║    └ Eventos temporales activos
 ║    └ Festivales y torneos especiales
 ║
@@ -77,11 +77,11 @@ export async function run(sock, m) {
 ║    └ Menú de minijuegos
 ║    └ Adivinanzas, quizzes, trivia
 ║
-║ 👥 *.social*
+║ 👥 *.social* / *.amigos*
 ║    └ Sistema social completo
 ║    └ Amigos, visitas, regalos, fiestas
 ║
-║ 💰 *.economia*
+║ 💰 *.economia* / *.mercado*
 ║    └ Sistema económico avanzado
 ║    └ Mercado, subastas, inversiones
 ║
@@ -97,9 +97,17 @@ export async function run(sock, m) {
 ║    └ Sistema de logros y trofeos
 ║    └ Salón de la fama, marcas personales
 ║
-║ 🗺️ *.mundo*
+║ 🗺️ *.mundo* / *.explorar*
 ║    └ Sistema de mundo y exploración
 ║    └ Lugares, misiones, mazmorras
+║
+║ 🔄 *.trade* / *.intercambiar*
+║    └ Sistema de intercambio de waifus
+║    └ Mercado entre usuarios
+║
+║ 🧪 *.testwaifu*
+║    └ Sistema de pruebas waifu
+║    └ Verificación de compatibilidad
 ║
 ║ 🎯 *Sistema de Niveles:*
 ║    └ 100 niveles máximos
@@ -125,8 +133,10 @@ export async function run(sock, m) {
 ║    └ ⚔️ Habilidades y clases
 ║    └ 🏆 Sistema de logros
 ║    └ 🗺️ Mundo y exploración
+║    └ 🔄 Sistema de intercambio
+║    └ 🧪 Sistema de pruebas
 ║
-╚══════════════════════════╝
+╚════════════════════════════╝
 
 ╔═══ BÚSQUEDAS ═══╗
 ║
@@ -146,7 +156,27 @@ export async function run(sock, m) {
 ║ 💬 *.simi* / *.bot* <texto>
 ║    └ Simi AI conversacional
 ║
-╚══════════════════╝
+║ 🧠 *.ai* / *.chat* <texto>
+║    └ Chat IA avanzada
+║    └ Conversaciones inteligentes
+║
+║ 🎭 *.personality* <tipo>
+║    └ Cambiar personalidad IA
+║    └ Múltiples modos disponibles
+║
+║ 📊 *.aistatus*
+║    └ Estado del sistema IA
+║    └ Métricas y configuración
+║
+║ 📖 *.aihelp*
+║    └ Ayuda sistema IA
+║    └ Comandos y funciones
+║
+║ 🔄 *.resetchat*
+║    └ Reiniciar conversación
+║    └ Limpiar historial IA
+║
+╚════════════════════════════╝
 
 ╔═══🎭 ACCIONES ANIME v4.0 ═══╗
 ║
@@ -219,6 +249,42 @@ export async function run(sock, m) {
 ║    └ Ej: .mazmorra bosque
 ║
 ╚════════════════════╝
+
+╔═══🎰 CASINO GAMES ═══╗
+║
+║ 🃏 *.blackjack* / *.veintiuno*
+║    └ Juego de blackjack
+║    └ Apuesta y gana puntos
+║
+║ 🎡 *.roulette* / *.ruleta*
+║    └ Ruleta europea
+║    └ Apuesta a números y colores
+║
+║ 🎴 *.poker*
+║    └ Texas Hold'em
+║    └ Torneos y mesas
+║
+║ 🎰 *.slots* / *.tragamonedas*
+║    └ Máquinas tragamonedas
+║    └ Múltiples temas y jackpots
+║
+║ 🎫 *.lottery* / *.loteria*
+║    └ Lotería semanal
+║    └ Grandes premios acumulados
+║
+║ 🎲 *.dice*
+║    └ Juego de dados
+║    └ Apuesta al resultado
+║
+║ 🪙 *.coinflip* / *.moneda*
+║    └ Cara o cruz
+║    └ 50/50 de probabilidad
+║
+║ 💰 *.jackpot* / *.pozo*
+║    └ Pozo acumulado
+║    └ Premio mayor progresivo
+║
+╚════════════════════════════╝
 
 ╔═══💰 ECONOMÍA v4.0 ═══╗
 ║
@@ -346,36 +412,38 @@ export async function run(sock, m) {
 
 ╔════════════════════════════╗
 ║ 💡 Usa .help <comando> para más info ║
-║ 🎮 Total: 100+ comandos disponibles  ║
+║ 🎮 Total: 150+ comandos disponibles  ║
 ║ 🌟 ¡Disfruta de HINATA-BOT v4.0!  ║
-╚══════════════════════════╝
+╚════════════════════════════╝
 
 ╔════════════════════════════╗
 ║ 👨‍💻 Creado por: nicolassanilo  ║
 ║ 📱 Versión: 4.0.0               ║
 ║ ⚡ Estado: 🟢 Online           ║
 ║ 💖 Sistema Waifu: ✅ Activo v4.0 ║
-║ 🎯 Bot Optimizado: ✅ 8 nuevos módulos  ║
-║ 🚀 Plugins: 100+ comandos nuevos  ║
-╚══════════════════════════╝
+║ 🎯 Bot Optimizado: ✅ 20+ nuevos módulos  ║
+║ 🚀 Plugins: 150+ comandos nuevos  ║
+║ 🎰 Casino Games: ✅ 8 juegos disponibles  ║
+║ 🤖 IA Chat: ✅ Sistema avanzado activo  ║
+╚════════════════════════════╝
 `;
 
-  const imgPath = './media/menu.jpg';
+const imgPath = './media/menu.jpg';
 
-  try {
-    if (fs.existsSync(imgPath)) {
-      const buffer = fs.readFileSync(imgPath);
-      await sock.sendMessage(chatId, { image: buffer, caption: menu }, { quoted: m });
-      return;
-    }
-  } catch (err) {
-    console.error('Error leyendo imagen de menu:', err && err.message ? err.message : err);
+try {
+  if (fs.existsSync(imgPath)) {
+    const buffer = fs.readFileSync(imgPath);
+    await sock.sendMessage(chatId, { image: buffer, caption: menu }, { quoted: m });
+    return;
   }
+} catch (err) {
+  console.error('Error leyendo imagen de menu:', err && err.message ? err.message : err);
+}
 
-  // Fallback a mensaje de texto si la imagen no está disponible
-  try {
-    await sock.sendMessage(chatId, { text: menu }, { quoted: m });
-  } catch (err) {
-    console.error('Error enviando menu como texto:', err && err.message ? err.message : err);
-  }
+// Fallback a mensaje de texto si la imagen no está disponible
+try {
+  await sock.sendMessage(chatId, { text: menu }, { quoted: m });
+} catch (err) {
+  console.error('Error enviando menu como texto:', err && err.message ? err.message : err);
+}
 }
