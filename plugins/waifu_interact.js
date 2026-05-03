@@ -467,11 +467,24 @@ async function performInteraction(characterId, userId, action) {
   // Actualizar estadísticas y experiencia
   const setClause = Object.keys(updates).map(key => `${key} = ${updates[key]}`).join(', ');
   
+  // Primero asegurar que el registro exista en waifu_levels
+  await db.run(`
+    INSERT OR IGNORE INTO waifu_levels (user_id, character_id, level, experience, affection, hunger, happiness)
+    VALUES (?, ?, 1, 0, 50, 50, 50)
+  `, [userId, characterId]);
+  
+  // Actualizar estadísticas
   await db.run(`
     UPDATE waifu_levels 
     SET ${setClause}, last_interaction = CURRENT_TIMESTAMP 
     WHERE character_id = ? AND user_id = ?
   `, [characterId, userId]);
+  
+  // Registrar la interacción
+  await db.run(`
+    INSERT INTO waifu_interactions (user_id, character_id, action, exp_gained)
+    VALUES (?, ?, ?, ?)
+  `, [userId, characterId, action, expGained]);
   
   const expResult = await addWaifuExp(characterId, userId, expGained);
   
@@ -484,6 +497,46 @@ async function performInteraction(characterId, userId, action) {
     leveledUp: expResult.leveledUp,
     newLevel: expResult.level
   };
+}
+
+/**
+ * Inicializa las tablas necesarias para el sistema de interacción
+ */
+async function initializeWaifuInteractionTables() {
+  try {
+    // Crear tabla de niveles y estadísticas de waifus si no existe
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS waifu_levels (
+        user_id TEXT,
+        character_id INTEGER,
+        level INTEGER DEFAULT 1,
+        experience INTEGER DEFAULT 0,
+        affection INTEGER DEFAULT 50,
+        hunger INTEGER DEFAULT 50,
+        happiness INTEGER DEFAULT 50,
+        last_interaction DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, character_id)
+      )
+    `);
+
+    // Crear tabla de registro de interacciones si no existe
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS waifu_interactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        character_id INTEGER,
+        action TEXT,
+        exp_gained INTEGER,
+        interaction_time DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    logger.success('Tablas de interacción waifu inicializadas correctamente');
+  } catch (error) {
+    logger.error('Error creando tablas de interacción:', error);
+    throw error;
+  }
 }
 
 /**
@@ -589,7 +642,17 @@ export const command = ['.interact', '.interactstats'];
 export const alias = ['.interactuar', '.estadisticas_interaccion'];
 export const description = 'Sistema de interacción con waifus - 33 acciones disponibles';
 
-// Cargar personajes al iniciar
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeWaifuInteractionTables();
+    // Cargar personajes
+    await loadCharacters();
+    logger.success('Sistema de interacción waifu inicializado correctamente');
+  } catch (error) {
+    logger.error('Error inicializando sistema de interacción:', error);
+  }
+})();
 
 export { CONFIG, logger, getUserInteractionStats, showInteractionStats, getActionImageUrl };

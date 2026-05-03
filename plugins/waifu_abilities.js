@@ -583,7 +583,7 @@ async function changeClass(sock, m, userId, text) {
     changeMessage += `📝 ${classDef.description}\n\n`;
     
     changeMessage += `📊 *Nuevas estadísticas de combate:*\n`;
-    const combatStats = calculateCombatStats({ class }, level, await getWaifuStats(character.id, userId));
+    const combatStats = calculateCombatStats({ "class": classType }, level, await getWaifuStats(character.id, userId));
     Object.entries(combatStats).forEach(([stat, value]) => {
       const statName = getStatName(stat);
       changeMessage += `• ${statName}: ${value}\n`;
@@ -1441,8 +1441,17 @@ export const command = ['.habilidades', '.clase', '.cambiar_clase', '.arbol_tale
 export const alias = ['.abilities', '.class', '.change_class', '.talent_tree', '.unlock_ability', '.upgrade_ability', '.use_ability', '.combat_stats'];
 export const description = 'Sistema de habilidades especiales y clases de waifus';
 
-// Inicializar sistema
-initializeAbilityTables();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeAbilityTables();
+    // Cargar personajes
+    await loadCharacters();
+    abilitiesLogger.success('Sistema de habilidades waifu inicializado correctamente');
+  } catch (error) {
+    abilitiesLogger.error('Error inicializando sistema de habilidades waifu:', error);
+  }
+})();
 
 export { CONFIG, abilitiesLogger, WAIFU_CLASSES, ABILITY_TYPES, CLASS_DEFINITIONS, ABILITY_DEFINITIONS };

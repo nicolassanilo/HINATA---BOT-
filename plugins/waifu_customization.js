@@ -384,8 +384,20 @@ export async function run(sock, m, { text, command }) {
       case '.equipar_marco':
         await equipFrame(sock, m, userId, text);
         break;
+      case '.comprar_outfit':
+        await buyOutfit(sock, m, userId, text);
+        break;
+      case '.comprar_accesorio':
+        await buyAccessory(sock, m, userId, text);
+        break;
+      case '.comprar_item':
+        await buyRoomItem(sock, m, userId, text);
+        break;
       default:
         customizationLogger.warning(`Comando no reconocido: ${command}`);
+        await sock.sendMessage(m.key.remoteJid, {
+          text: `❌ Comando no reconocido: ${command}\n\n💡 *Usa \`.personalizar\` para ver los comandos disponibles*`
+        }, { quoted: m });
     }
   } catch (error) {
     customizationLogger.error('Error en el sistema de personalización:', error);
@@ -1280,11 +1292,17 @@ async function updateUserBalance(userId, newBalance) {
 
 async function getCustomizationStats(userId) {
   try {
-    const stats = await db.get(
-      'SELECT COUNT(DISTINCT id) as outfits, COUNT(DISTINCT id) as accessories, COUNT(DISTINCT id) as roomItems, COUNT(DISTINCT id) as photos FROM waifu_outfits wo LEFT JOIN waifu_accessories wa ON wo.user_id = wa.user_id LEFT JOIN room_items ri ON wa.user_id = ri.user_id LEFT JOIN waifu_gallery wg ON ri.user_id = wg.user_id WHERE wo.user_id = ? OR wa.user_id = ? OR ri.user_id = ? OR wg.user_id = ?',
-      [userId, userId, userId, userId]
-    );
-    return stats || { outfits: 0, accessories: 0, roomItems: 0, photos: 0 };
+    const outfits = await db.get('SELECT COUNT(*) as count FROM waifu_outfits WHERE user_id = ?', [userId]);
+    const accessories = await db.get('SELECT COUNT(*) as count FROM waifu_accessories WHERE user_id = ?', [userId]);
+    const roomItems = await db.get('SELECT COUNT(*) as count FROM room_items WHERE user_id = ?', [userId]);
+    const photos = await db.get('SELECT COUNT(*) as count FROM waifu_gallery WHERE user_id = ?', [userId]);
+    
+    return {
+      outfits: outfits?.count || 0,
+      accessories: accessories?.count || 0,
+      roomItems: roomItems?.count || 0,
+      photos: photos?.count || 0
+    };
   } catch (error) {
     customizationLogger.error('Error al obtener estadísticas de personalización:', error);
     return { outfits: 0, accessories: 0, roomItems: 0, photos: 0 };
@@ -1477,12 +1495,570 @@ async function initializeCustomizationTables() {
 }
 
 // Exportar configuración y funciones necesarias
-export const command = ['.personalizar', '.vestuario', '.equipar_outfit', '.accesorios', '.equipar_accesorio', '.cuarto', '.decorar_cuarto', '.galeria', '.foto', '.marcos', '.equipar_marco'];
+export const command = ['.personalizar', '.vestuario', '.equipar_outfit', '.accesorios', '.equipar_accesorio', '.cuarto', '.decorar_cuarto', '.galeria', '.foto', '.marcos', '.equipar_marco', '.comprar_outfit', '.comprar_accesorio', '.comprar_item'];
 export const alias = ['.customize', '.wardrobe', '.equip_outfit', '.accessories', '.equip_accessory', '.room', '.decorate_room', '.gallery', '.photo', '.frames', '.equip_frame'];
 export const description = 'Sistema de personalización de waifus con vestuario, accesorios y decoración';
 
 // Inicializar sistema
 initializeCustomizationTables();
 loadCharacters();
+
+/**
+ * Compra un outfit para una waifu
+ */
+async function buyOutfit(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const outfitType = args[0];
+  
+  if (!outfitType) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el tipo de outfit.\n\n' +
+            '💡 *Uso:* `.comprar_outfit <tipo_outfit>`\n' +
+            '*Tipos:* ' + Object.keys(OUTFIT_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  if (!Object.values(OUTFIT_TYPES).includes(outfitType)) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ Tipo de outfit no válido.\n\n` +
+            '*Tipos disponibles:* ' + Object.keys(OUTFIT_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  try {
+    const outfitDef = OUTFIT_DEFINITIONS[outfitType];
+    const userBalance = await getUserBalance(userId);
+    
+    if (userBalance.total < outfitDef.price) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes suficientes 💎.\n\n` +
+              `💰 *Costo:* ${outfitDef.price.toLocaleString()} 💎\n` +
+              `💵 *Tu saldo:* ${userBalance.total.toLocaleString()} 💎`
+      }, { quoted: m });
+    }
+    
+    // Verificar si ya tiene el outfit
+    const existing = await db.get(
+      'SELECT * FROM waifu_outfits WHERE user_id = ? AND outfit_type = ?',
+      [userId, outfitType]
+    );
+    
+    if (existing) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ Ya tienes el outfit "${outfitDef.name}".`
+      }, { quoted: m });
+    }
+    
+    // Realizar compra
+    await updateUserBalance(userId, userBalance.total - outfitDef.price);
+    
+    // Agregar outfit a la base de datos (sin waifu específica)
+    await db.run(
+      'INSERT INTO waifu_outfits (character_id, user_id, outfit_type, equipped) VALUES (?, ?, ?, 0)',
+      [0, userId, outfitType]
+    );
+    
+    let buyMessage = `🛍️ *OUTFIT COMPRADO* 🛍️\n\n`;
+    buyMessage += `${outfitDef.emoji} *${outfitDef.name}*\n`;
+    buyMessage += `📝 ${outfitDef.description}\n`;
+    buyMessage += `💸 *Costo:* ${outfitDef.price.toLocaleString()} 💎\n\n`;
+    buyMessage += `✅ *Outfit añadido a tu armario*\n`;
+    buyMessage += `💡 *Usa \`.equipar_outfit <waifu> ${outfitType}\` para equiparlo`;
+    
+    await sock.sendMessage(chatId, { text: buyMessage }, { quoted: m });
+    customizationLogger.success(`Outfit comprado - usuario: ${userId} - tipo: ${outfitType}`);
+    
+  } catch (error) {
+    customizationLogger.error('Error al comprar outfit:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al comprar el outfit.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Compra un accesorio para una waifu
+ */
+async function buyAccessory(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const accessoryType = args[0];
+  
+  if (!accessoryType) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el tipo de accesorio.\n\n' +
+            '💡 *Uso:* `.comprar_accesorio <tipo_accesorio>`\n' +
+            '*Tipos:* ' + Object.keys(ACCESSORY_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  if (!Object.values(ACCESSORY_TYPES).includes(accessoryType)) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ Tipo de accesorio no válido.\n\n` +
+            '*Tipos disponibles:* ' + Object.keys(ACCESSORY_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  try {
+    const accessoryDef = ACCESSORY_DEFINITIONS[accessoryType];
+    const userBalance = await getUserBalance(userId);
+    
+    if (userBalance.total < accessoryDef.price) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes suficientes 💎.\n\n` +
+              `💰 *Costo:* ${accessoryDef.price.toLocaleString()} 💎\n` +
+              `💵 *Tu saldo:* ${userBalance.total.toLocaleString()} 💎`
+      }, { quoted: m });
+    }
+    
+    // Verificar si ya tiene el accesorio
+    const existing = await db.get(
+      'SELECT * FROM waifu_accessories WHERE user_id = ? AND accessory_type = ?',
+      [userId, accessoryType]
+    );
+    
+    if (existing) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ Ya tienes el accesorio "${accessoryDef.name}".`
+      }, { quoted: m });
+    }
+    
+    // Realizar compra
+    await updateUserBalance(userId, userBalance.total - accessoryDef.price);
+    
+    // Agregar accesorio a la base de datos (sin waifu específica)
+    await db.run(
+      'INSERT INTO waifu_accessories (character_id, user_id, accessory_type) VALUES (?, ?, ?)',
+      [0, userId, accessoryType]
+    );
+    
+    let buyMessage = `💎 *ACCESORIO COMPRADO* 💎\n\n`;
+    buyMessage += `${accessoryDef.emoji} *${accessoryDef.name}*\n`;
+    buyMessage += `📝 ${accessoryDef.description}\n`;
+    buyMessage += `💸 *Costo:* ${accessoryDef.price.toLocaleString()} 💎\n\n`;
+    buyMessage += `✅ *Accesorio añadido a tu colección*\n`;
+    buyMessage += `💡 *Usa \`.equipar_accesorio <waifu> ${accessoryType}\` para equiparlo`;
+    
+    await sock.sendMessage(chatId, { text: buyMessage }, { quoted: m });
+    customizationLogger.success(`Accesorio comprado - usuario: ${userId} - tipo: ${accessoryType}`);
+    
+  } catch (error) {
+    customizationLogger.error('Error al comprar accesorio:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al comprar el accesorio.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Compra un item de cuarto
+ */
+async function buyRoomItem(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const itemType = args[0];
+  
+  if (!itemType) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el tipo de item.\n\n' +
+            '💡 *Uso:* `.comprar_item <tipo_item>`\n' +
+            '*Items:* ' + Object.keys(ROOM_ITEM_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  if (!Object.values(ROOM_ITEMS).includes(itemType)) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ Tipo de item no válido.\n\n` +
+            '*Items disponibles:* ' + Object.keys(ROOM_ITEM_DEFINITIONS).join(', ')
+    }, { quoted: m });
+  }
+  
+  try {
+    const itemDef = ROOM_ITEM_DEFINITIONS[itemType];
+    const userBalance = await getUserBalance(userId);
+    
+    if (userBalance.total < itemDef.price) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes suficientes 💎.\n\n` +
+              `💰 *Costo:* ${itemDef.price.toLocaleString()} 💎\n` +
+              `💵 *Tu saldo:* ${userBalance.total.toLocaleString()} 💎`
+      }, { quoted: m });
+    }
+    
+    // Verificar si ya tiene el item
+    const existing = await db.get(
+      'SELECT * FROM room_items WHERE user_id = ? AND item_type = ?',
+      [userId, itemType]
+    );
+    
+    if (existing) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ Ya tienes el item "${itemDef.name}".`
+      }, { quoted: m });
+    }
+    
+    // Realizar compra
+    await updateUserBalance(userId, userBalance.total - itemDef.price);
+    
+    // Agregar item a la base de datos (sin waifu específica)
+    await db.run(
+      'INSERT INTO room_items (character_id, user_id, item_type) VALUES (?, ?, ?)',
+      [0, userId, itemType]
+    );
+    
+    let buyMessage = `🏠 *ITEM DE CUARTO COMPRADO* 🏠\n\n`;
+    buyMessage += `${itemDef.emoji} *${itemDef.name}*\n`;
+    buyMessage += `📝 ${itemDef.description}\n`;
+    buyMessage += `💸 *Costo:* ${itemDef.price.toLocaleString()} 💎\n\n`;
+    buyMessage += `✅ *Item añadido a tu inventario*\n`;
+    buyMessage += `💡 *Usa \`.decorar_cuarto <waifu> ${itemType}\` para colocarlo`;
+    
+    await sock.sendMessage(chatId, { text: buyMessage }, { quoted: m });
+    customizationLogger.success(`Item comprado - usuario: ${userId} - tipo: ${itemType}`);
+    
+  } catch (error) {
+    customizationLogger.error('Error al comprar item:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al comprar el item.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Muestra la galería de una waifu
+ */
+async function showGallery(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const waifuName = args.join(' ');
+  
+  if (!waifuName) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el nombre de la waifu.\n\n' +
+            '💡 *Uso:* `.galeria <nombre_waifu>`'
+    }, { quoted: m });
+  }
+  
+  try {
+    // Verificar si el usuario tiene la waifu
+    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+    const claimedIds = claimed.map(c => c.character_id);
+    
+    const character = characters.find(c => 
+      claimedIds.includes(c.id) &&
+      c.name.toLowerCase().includes(waifuName.toLowerCase())
+    );
+    
+    if (!character) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes a *${waifuName}* en tu colección.`
+      }, { quoted: m });
+    }
+    
+    // Obtener fotos de la galería
+    const photos = await getWaifuGallery(character.id, userId);
+    const userBalance = await getUserBalance(userId);
+    const lastPhoto = await getLastPhoto(userId);
+    
+    const rareza = getRarezaEmoji(character.price);
+    
+    let galleryMessage = `📸 *GALERÍA DE ${character.name.toUpperCase()}* 📸\n\n`;
+    galleryMessage += `${rareza} *${character.name}*\n`;
+    galleryMessage += `📺 ${character.anime}\n`;
+    galleryMessage += `💰 *Tu saldo:* ${userBalance.total.toLocaleString()} 💎\n`;
+    galleryMessage += `📸 *Fotos:* ${photos.length}/${CONFIG.maxGalleryPhotos}\n\n`;
+    
+    if (photos.length === 0) {
+      galleryMessage += `📦 *No tienes fotos*\n\n`;
+      galleryMessage += `💡 *Toma fotos con \`.foto <waifu>\``;
+    } else {
+      galleryMessage += `📸 *FOTOS RECIENTES:*\n\n`;
+      
+      photos.forEach((photo, index) => {
+        galleryMessage += `${index + 1}. 📷 Foto #${photo.id}\n`;
+        galleryMessage += `   🎨 Estilo: ${photo.style || 'Normal'}\n`;
+        galleryMessage += `   🖼️ Marco: ${photo.frame || 'Ninguno'}\n`;
+        galleryMessage += `   📅 Fecha: ${new Date(photo.taken_at).toLocaleDateString()}\n\n`;
+      });
+    }
+    
+    if (lastPhoto) {
+      const cooldownTime = CONFIG.photoCooldown - (Date.now() - new Date(lastPhoto.taken_at).getTime());
+      if (cooldownTime > 0) {
+        galleryMessage += `⏰ *Cooldown:* ${Math.ceil(cooldownTime / 60000)} minutos\n\n`;
+      }
+    }
+    
+    galleryMessage += `💡 *Comandos disponibles:*\n`;
+    galleryMessage += `• \`.foto <waifu>\` - Tomar foto\n`;
+    galleryMessage += `• \`.marcos <waifu>\` - Ver marcos disponibles`;
+    
+    await sock.sendMessage(chatId, { 
+      text: galleryMessage, 
+      mentions: [userId] 
+    }, { quoted: m });
+    
+  } catch (error) {
+    customizationLogger.error('Error al mostrar galería:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al cargar la galería.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Toma una foto de una waifu
+ */
+async function takePhoto(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const waifuName = args.join(' ');
+  
+  if (!waifuName) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el nombre de la waifu.\n\n' +
+            '💡 *Uso:* `.foto <nombre_waifu>`'
+    }, { quoted: m });
+  }
+  
+  try {
+    // Verificar cooldown
+    const lastPhoto = await getLastPhoto(userId);
+    if (lastPhoto) {
+      const cooldownTime = CONFIG.photoCooldown - (Date.now() - new Date(lastPhoto.taken_at).getTime());
+      if (cooldownTime > 0) {
+        return await sock.sendMessage(chatId, {
+          text: `⏰ Debes esperar ${Math.ceil(cooldownTime / 60000)} minutos para tomar otra foto.`
+        }, { quoted: m });
+      }
+    }
+    
+    // Verificar si el usuario tiene la waifu
+    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+    const claimedIds = claimed.map(c => c.character_id);
+    
+    const character = characters.find(c => 
+      claimedIds.includes(c.id) &&
+      c.name.toLowerCase().includes(waifuName.toLowerCase())
+    );
+    
+    if (!character) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes a *${waifuName}* en tu colección.`
+      }, { quoted: m });
+    }
+    
+    // Verificar límite de fotos
+    const photos = await getWaifuGallery(character.id, userId);
+    if (photos.length >= CONFIG.maxGalleryPhotos) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ Has alcanzado el límite de ${CONFIG.maxGalleryPhotos} fotos.`
+      }, { quoted: m });
+    }
+    
+    // Tomar foto
+    await db.run(
+      'INSERT INTO waifu_gallery (character_id, user_id, style, frame) VALUES (?, ?, ?, ?)',
+      [character.id, userId, 'Normal', 'Ninguno']
+    );
+    
+    const rareza = getRarezaEmoji(character.price);
+    
+    let photoMessage = `📸 *FOTO CAPTURADA* 📸\n\n`;
+    photoMessage += `${rareza} *${character.name}*\n`;
+    photoMessage += `📺 ${character.anime}\n\n`;
+    photoMessage += `✨ *¡Foto añadida a la galería!*\n`;
+    photoMessage += `📸 Total: ${photos.length + 1}/${CONFIG.maxGalleryPhotos} fotos\n\n`;
+    photoMessage += `💡 *Usa \`.galeria ${character.name}\` para ver todas las fotos`;
+    
+    try {
+      await sock.sendMessage(chatId, {
+        image: { url: character.image_url[Math.floor(Math.random() * character.image_url.length)] },
+        caption: photoMessage,
+        mentions: [userId]
+      }, { quoted: m });
+    } catch (imageError) {
+      await sock.sendMessage(chatId, { 
+        text: photoMessage, 
+        mentions: [userId] 
+      }, { quoted: m });
+    }
+    
+    customizationLogger.success(`Foto tomada - waifu: ${character.name} - usuario: ${userId}`);
+    
+  } catch (error) {
+    customizationLogger.error('Error al tomar foto:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al tomar la foto.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Muestra marcos disponibles
+ */
+async function showFrames(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  const waifuName = args.join(' ');
+  
+  if (!waifuName) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Debes especificar el nombre de la waifu.\n\n' +
+            '💡 *Uso:* `.marcos <nombre_waifu>`'
+    }, { quoted: m });
+  }
+  
+  try {
+    // Verificar si el usuario tiene la waifu
+    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+    const claimedIds = claimed.map(c => c.character_id);
+    
+    const character = characters.find(c => 
+      claimedIds.includes(c.id) &&
+      c.name.toLowerCase().includes(waifuName.toLowerCase())
+    );
+    
+    if (!character) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes a *${waifuName}* en tu colección.`
+      }, { quoted: m });
+    }
+    
+    const rareza = getRarezaEmoji(character.price);
+    
+    let framesMessage = `🖼️ *MARCOS DISPONIBLES* 🖼️\n\n`;
+    framesMessage += `${rareza} *${character.name}*\n`;
+    framesMessage += `📺 ${character.anime}\n\n`;
+    
+    framesMessage += `🖼️ *MARCOS GRATIS:*\n\n`;
+    framesMessage += `1. 📜 *Marco Simple* - Gratis\n`;
+    framesMessage += `   📝 Marco básico y elegante\n\n`;
+    framesMessage += `2. 🌟 *Marco Estrella* - Gratis\n`;
+    framesMessage += `   📝 Con detalles brillantes\n\n`;
+    framesMessage += `3. 💖 *Marco Corazón* - Gratis\n`;
+    framesMessage += `   📝 Romántico y tierno\n\n`;
+    
+    framesMessage += `💡 *Comando disponible:*\n`;
+    framesMessage += `• \`.equipar_marco <waifu> <marco>\` - Cambiar marco\n\n`;
+    framesMessage += `🎯 *Marcos disponibles:* simple, estrella, corazon`;
+    
+    await sock.sendMessage(chatId, { 
+      text: framesMessage, 
+      mentions: [userId] 
+    }, { quoted: m });
+    
+  } catch (error) {
+    customizationLogger.error('Error al mostrar marcos:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al cargar los marcos.'
+    }, { quoted: m });
+  }
+}
+
+/**
+ * Equipa un marco a una foto
+ */
+async function equipFrame(sock, m, userId, text) {
+  const chatId = m.key.remoteJid;
+  const args = (text || '').split(' ').slice(1);
+  
+  if (args.length < 2) {
+    return await sock.sendMessage(chatId, {
+      text: '❌ Uso incorrecto.\n\n' +
+            '💡 *Formato:* `.equipar_marco <nombre_waifu> <tipo_marco>`\n' +
+            '*Marcos:* simple, estrella, corazon'
+    }, { quoted: m });
+  }
+  
+  const waifuName = args.slice(0, -1).join(' ');
+  const frameType = args[args.length - 1];
+  
+  const validFrames = ['simple', 'estrella', 'corazon'];
+  if (!validFrames.includes(frameType.toLowerCase())) {
+    return await sock.sendMessage(chatId, {
+      text: `❌ Tipo de marco no válido.\n\n` +
+            '*Marcos disponibles:* ' + validFrames.join(', ')
+    }, { quoted: m });
+  }
+  
+  try {
+    // Verificar si el usuario tiene la waifu
+    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
+    const claimedIds = claimed.map(c => c.character_id);
+    
+    const character = characters.find(c => 
+      claimedIds.includes(c.id) &&
+      c.name.toLowerCase().includes(waifuName.toLowerCase())
+    );
+    
+    if (!character) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes a *${waifuName}* en tu colección.`
+      }, { quoted: m });
+    }
+    
+    // Obtener última foto
+    const lastPhoto = await db.get(
+      'SELECT * FROM waifu_gallery WHERE character_id = ? AND user_id = ? ORDER BY taken_at DESC LIMIT 1',
+      [character.id, userId]
+    );
+    
+    if (!lastPhoto) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ No tienes fotos de *${character.name}*. Toma una primero con \`.foto ${character.name}\``
+      }, { quoted: m });
+    }
+    
+    // Actualizar marco
+    await db.run(
+      'UPDATE waifu_gallery SET frame = ? WHERE id = ?',
+      [frameType, lastPhoto.id]
+    );
+    
+    const frameNames = {
+      'simple': 'Marco Simple',
+      'estrella': 'Marco Estrella', 
+      'corazon': 'Marco Corazón'
+    };
+    
+    const frameEmojis = {
+      'simple': '📜',
+      'estrella': '🌟',
+      'corazon': '💖'
+    };
+    
+    const rareza = getRarezaEmoji(character.price);
+    
+    let frameMessage = `🖼️ *MARCO EQUIPADO* 🖼️\n\n`;
+    frameMessage += `${rareza} *${character.name}*\n`;
+    frameMessage += `📺 ${character.anime}\n\n`;
+    frameMessage += `${frameEmojis[frameType]} *${frameNames[frameType]}* equipado\n\n`;
+    frameMessage += `✨ *¡La foto se ve aún más hermosa!*\n`;
+    frameMessage += `💡 *Usa \`.galeria ${character.name}\` para ver la foto con el nuevo marco`;
+    
+    try {
+      await sock.sendMessage(chatId, {
+        image: { url: character.image_url[Math.floor(Math.random() * character.image_url.length)] },
+        caption: frameMessage,
+        mentions: [userId]
+      }, { quoted: m });
+    } catch (imageError) {
+      await sock.sendMessage(chatId, { 
+        text: frameMessage, 
+        mentions: [userId] 
+      }, { quoted: m });
+    }
+    
+    customizationLogger.success(`Marco equipado - waifu: ${character.name} - marco: ${frameType}`);
+    
+  } catch (error) {
+    customizationLogger.error('Error al equipar marco:', error);
+    await sock.sendMessage(chatId, {
+      text: '❌ Error al equipar el marco.'
+    }, { quoted: m });
+  }
+}
 
 export { CONFIG, customizationLogger, CUSTOMIZATION_CATEGORIES, OUTFIT_TYPES, ACCESSORY_TYPES, ROOM_ITEMS };

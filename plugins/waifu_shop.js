@@ -185,9 +185,41 @@ async function getUserPurchaseStats(userId) {
 }
 
 /**
+ * Inicializa las tablas necesarias para el sistema de tienda
+ */
+async function initializeShopTables() {
+  try {
+    // Crear tabla de compras de waifus si no existe
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS waifu_purchases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        character_id INTEGER,
+        price INTEGER,
+        purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Crear tabla de historial de trabajo si no existe
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS work_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    logger.success('Tablas de tienda inicializadas correctamente');
+  } catch (error) {
+    logger.error('Error al inicializar tablas de tienda:', error);
+    throw error;
+  }
+}
+
+/**
  * Función para calcular precio dinámico basado en rareza y factores
  */
-function calculateDynamicPrice(character, userId) {
+async function calculateDynamicPrice(character, userId) {
   const basePrice = character.price || CONFIG.basePrice;
   const rarity = getRarezaFromPrice(basePrice);
   const rarityMultiplier = CONFIG.rarityMultiplier[rarity] || 1;
@@ -196,7 +228,8 @@ function calculateDynamicPrice(character, userId) {
   let finalPrice = basePrice * rarityMultiplier;
   
   // Aplicar bonificación si el usuario trabajó recientemente
-  if (hasRecentWork(userId)) {
+  const hasWorkBonus = await hasRecentWork(userId);
+  if (hasWorkBonus) {
     finalPrice *= (1 - CONFIG.workBonus); // 20% de descuento
   }
   
@@ -234,13 +267,15 @@ async function showWaifuShop(sock, m, userId) {
   
   shopMessage += `🎀 *WAIFUS DISPONIBLES:*\n\n`;
   
-  shopWaifus.forEach((waifu, index) => {
+  // Procesar waifus para mostrar precios dinámicos
+  for (let i = 0; i < shopWaifus.length; i++) {
+    const waifu = shopWaifus[i];
     const rarity = getRarezaFromPrice(waifu.price);
     const rarityEmoji = getRarezaEmoji(waifu.price);
-    const dynamicPrice = calculateDynamicPrice(waifu, userId);
+    const dynamicPrice = await calculateDynamicPrice(waifu, userId);
     const discount = hasWorkBonus ? (waifu.price - dynamicPrice) : 0;
     
-    shopMessage += `${index + 1}. ${rarityEmoji} *${waifu.name}*\n`;
+    shopMessage += `${i + 1}. ${rarityEmoji} *${waifu.name}*\n`;
     shopMessage += `   📺 ${waifu.anime}\n`;
     shopMessage += `   💎 Precio: ${dynamicPrice.toLocaleString()} 💎`;
     
@@ -249,7 +284,7 @@ async function showWaifuShop(sock, m, userId) {
     }
     
     shopMessage += `\n   🏷️ Rareza: ${rarity}\n\n`;
-  });
+  }
   
   shopMessage += `💡 *Cómo comprar:*\n`;
   shopMessage += `• \`.comprar <nombre>\` - Comprar waifu\n`;
@@ -415,7 +450,17 @@ export const command = ['.tienda', '.comprar'];
 export const alias = ['.shop', '.buy'];
 export const description = 'Sistema de tienda y compra de waifus';
 
-// Cargar personajes al iniciar
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeShopTables();
+    // Cargar personajes
+    await loadCharacters();
+    logger.success('Sistema de tienda waifu inicializado correctamente');
+  } catch (error) {
+    logger.error('Error inicializando sistema de tienda waifu:', error);
+  }
+})();
 
 export { CONFIG, logger, getUserBalance, calculateDynamicPrice };

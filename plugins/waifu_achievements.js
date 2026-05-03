@@ -796,7 +796,7 @@ async function claimReward(sock, m, userId, text) {
     if (!achievementDef) {
       return await sock.sendMessage(chatId, {
         text: `❌ Logro no válido.\n\n` +
-              '*Usa \`.logros\` para ver tus logros disponibles*`
+              '*Usa \`.logros\` para ver tus logros disponibles*'
       }, { quoted: m });
     }
     

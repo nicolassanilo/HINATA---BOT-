@@ -391,9 +391,18 @@ export async function sendWaifuImage(sock, chatId, character, caption, mentions 
   }
 }
 
-// Inicializar sistema
-initializeWaifuLevels();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeWaifuLevels();
+    // Cargar personajes
+    await loadCharacters();
+    logger.success('Sistema core waifu inicializado correctamente');
+  } catch (error) {
+    logger.error('Error inicializando sistema core waifu:', error);
+  }
+})();
 
 // Exportar variables y funciones para uso en otros plugins
 export { characters, charactersCache, lastCacheUpdate, CACHE_DURATION };

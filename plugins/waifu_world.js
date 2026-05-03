@@ -930,10 +930,10 @@ async function getUnlockedLocations(userId) {
   }
 }
 
-function canUnlockLocation(userId, locationType) {
+async function canUnlockLocation(userId, locationType) {
   // Esta función debería verificar si el usuario cumple los requisitos
   // Por ahora, devuelve true si el nivel es suficiente
-  const userStats = getUserWorldStats(userId);
+  const userStats = await getUserWorldStats(userId);
   const locationDef = LOCATION_DEFINITIONS[locationType];
   return (userStats.explorationLevel || 1) >= locationDef.requirements.level;
 }
@@ -1167,41 +1167,24 @@ async function initializeWorldTables() {
   }
 }
 
-// Funciones auxiliares
-async function getUserWorldStats(userId) {
+// Función duplicada eliminada - usar la definición anterior (líneas 898-917)
+
+async function getUnlockedLocations(userId) {
   try {
-    const stats = await db.get(
-      'SELECT * FROM user_world_stats WHERE user_id = ?',
+    const unlocked = await db.all(
+      'SELECT DISTINCT location_type FROM location_explorations WHERE user_id = ?',
       [userId]
     );
-    return stats || {
-      explorationLevel: 1,
-      explorationPoints: 0,
-      currentLocation: LOCATION_TYPES.CITY,
-      locationsUnlocked: JSON.stringify([LOCATION_TYPES.CITY]),
-      lastExploration: null
-    };
+    const locations = unlocked.map(u => u.location_type);
+    // Si no hay exploraciones, dar la ciudad por defecto
+    return locations.length > 0 ? locations : [LOCATION_TYPES.CITY];
   } catch (error) {
-    worldLogger.error('Error obteniendo estadísticas del mundo:', error);
-    return {
-      explorationLevel: 1,
-      explorationPoints: 0,
-      currentLocation: LOCATION_TYPES.CITY,
-      locationsUnlocked: JSON.stringify([LOCATION_TYPES.CITY]),
-      lastExploration: null
-    };
+    worldLogger.error('Error al obtener lugares desbloqueados:', error);
+    return [LOCATION_TYPES.CITY]; // Por defecto, la ciudad está siempre desbloqueada
   }
 }
 
-async function getUnlockedLocations(userId) {
-  const stats = await getUserWorldStats(userId);
-  return JSON.parse(stats.locationsUnlocked || '[]');
-}
-
-function canUnlockLocation(userId, locationType) {
-  // Lógica simple para desbloquear lugares
-  return true; // Temporalmente todos los lugares son desbloqueables
-}
+// Función duplicada eliminada - usar la definición corregida anteriormente
 
 // Exportar configuración y funciones necesarias
 export const command = [

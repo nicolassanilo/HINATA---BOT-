@@ -177,9 +177,29 @@ async function showSocialMenu(sock, m, userId) {
   const chatId = m.key.remoteJid;
   
   try {
-    const friendsCount = await getFriendsCount(userId);
-    const pendingRequests = await getPendingRequests(userId);
-    const userStats = await getSocialStats(userId);
+    // Obtener datos con manejo de errores seguro
+    let friendsCount, pendingRequests, userStats;
+    
+    try {
+      friendsCount = await getFriendsCount(userId);
+    } catch (error) {
+      socialLogger.error('Error obteniendo amigos:', error);
+      friendsCount = 0;
+    }
+    
+    try {
+      pendingRequests = await getPendingRequests(userId);
+    } catch (error) {
+      socialLogger.error('Error obteniendo solicitudes pendientes:', error);
+      pendingRequests = 0;
+    }
+    
+    try {
+      userStats = await getSocialStats(userId);
+    } catch (error) {
+      socialLogger.error('Error obteniendo estadísticas sociales:', error);
+      userStats = { partiesHosted: 0, giftsSent: 0 };
+    }
     
     let menuMessage = `💝 *MENÚ SOCIAL* 💝\n\n`;
     menuMessage += `👤 *@${userId.split('@')[0]}*\n`;
@@ -207,7 +227,10 @@ async function showSocialMenu(sock, m, userId) {
     menuMessage += `• \`.fiesta <nombre>\` - Crear fiesta\n`;
     menuMessage += `• \`.unirse_fiesta <id>\` - Unirse a fiesta\n\n`;
     
-    menuMessage += `💡 *Tipos de regalos:* ${Object.keys(GIFT_DEFINITIONS).join(', ')}\n`;
+    // Verificar que GIFT_DEFINITIONS exista
+    const giftTypes = GIFT_DEFINITIONS ? Object.keys(GIFT_DEFINITIONS).join(', ') : 'flowers, chocolate, jewelry, books, games, clothes, food, accessories';
+    
+    menuMessage += `💡 *Tipos de regalos:* ${giftTypes}\n`;
     menuMessage += `⏰ *Cooldowns:* Visita 2h, Regalo 6h, Fiesta 24h`;
     
     await sock.sendMessage(chatId, { 
@@ -217,8 +240,9 @@ async function showSocialMenu(sock, m, userId) {
     
   } catch (error) {
     socialLogger.error('Error al mostrar menú social:', error);
+    // Enviar mensaje de error simple pero informativo
     await sock.sendMessage(chatId, {
-      text: '❌ Error al cargar el menú social.'
+      text: '❌ Error al cargar el menú social.\n\n💡 *Intenta recargar el bot con .reload*'
     }, { quoted: m });
   }
 }
@@ -1070,8 +1094,17 @@ export const command = ['.amigos', '.agregar_amigo', '.visitar', '.regalar', '.f
 export const alias = ['.friends', '.add_friend', '.visit', '.gift', '.party', '.join_party', '.relationships', '.social_menu'];
 export const description = 'Sistema de relaciones sociales entre usuarios y waifus';
 
-// Inicializar sistema
-initializeSocialTables();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeSocialTables();
+    // Cargar personajes
+    await loadCharacters();
+    socialLogger.success('Sistema social waifu inicializado correctamente');
+  } catch (error) {
+    socialLogger.error('Error inicializando sistema social waifu:', error);
+  }
+})();
 
 export { CONFIG, socialLogger, RELATIONSHIP_TYPES, GIFT_TYPES, GIFT_DEFINITIONS };

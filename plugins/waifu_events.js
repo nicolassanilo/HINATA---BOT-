@@ -127,20 +127,53 @@ async function showCurrentEvent(sock, m, userId) {
   const chatId = m.key.remoteJid;
   
   try {
-    const currentEvent = await getCurrentEvent();
+    let currentEvent, nextEventTime;
+    
+    try {
+      currentEvent = await getCurrentEvent();
+    } catch (error) {
+      eventsLogger.error('Error obteniendo evento actual:', error);
+      currentEvent = null;
+    }
     
     if (!currentEvent) {
+      try {
+        nextEventTime = await getNextEventTime();
+      } catch (error) {
+        eventsLogger.error('Error obteniendo próximo evento:', error);
+        nextEventTime = 'Próximamente';
+      }
+      
       return await sock.sendMessage(chatId, {
         text: `📅 *NO HAY EVENTOS ACTIVOS*\n\n` +
-              `⏰ *Próximo evento:* ${await getNextEventTime()}\n\n` +
+              `⏰ *Próximo evento:* ${nextEventTime}\n\n` +
               `💡 *Usa \`.eventos\` para ver todos los eventos disponibles*\n` +
               `🎯 *Usa \`.participar\` cuando haya un evento activo`
       }, { quoted: m });
     }
     
-    const eventDef = EVENT_DEFINITIONS[currentEvent.type];
-    const participants = await getEventParticipants(currentEvent.id);
-    const timeRemaining = getTimeRemaining(currentEvent.end_time);
+    let eventDef, participants, timeRemaining;
+    
+    try {
+      eventDef = EVENT_DEFINITIONS[currentEvent.type];
+    } catch (error) {
+      eventsLogger.error('Error obteniendo definición de evento:', error);
+      eventDef = { name: 'Evento Desconocido', description: 'Descripción no disponible', emoji: '📅' };
+    }
+    
+    try {
+      participants = await getEventParticipants(currentEvent.id);
+    } catch (error) {
+      eventsLogger.error('Error obteniendo participantes:', error);
+      participants = [];
+    }
+    
+    try {
+      timeRemaining = getTimeRemaining(currentEvent.end_time);
+    } catch (error) {
+      eventsLogger.error('Error calculando tiempo restante:', error);
+      timeRemaining = 'Tiempo no disponible';
+    }
     
     let eventMessage = `${eventDef.emoji} *${eventDef.name}* ${eventDef.emoji}\n\n`;
     eventMessage += `📝 *Descripción:* ${eventDef.description}\n`;
@@ -503,8 +536,17 @@ export const command = ['.evento', '.eventos', '.participar', '.premios_evento']
 export const alias = ['.event', '.events', '.join_event', '.event_rewards'];
 export const description = 'Sistema de eventos temporales y especiales para waifus';
 
-// Inicializar sistema
-initializeEventTables();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeEventTables();
+    // Cargar personajes
+    await loadCharacters();
+    eventsLogger.success('Sistema de eventos waifu inicializado correctamente');
+  } catch (error) {
+    eventsLogger.error('Error inicializando sistema de eventos waifu:', error);
+  }
+})();
 
 export { CONFIG, eventsLogger, getCurrentEvent, EVENT_TYPES, EVENT_DEFINITIONS };

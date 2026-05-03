@@ -77,18 +77,50 @@ export async function run(sock, m, { text, command }) {
  * Redirige a un módulo específico
  */
 async function redirectToModule(moduleName, sock, m, args) {
+  const chatId = m.key.remoteJid;
+  
   try {
+    logger.info(`Redirigiendo a módulo: ${moduleName}`);
+    
+    // Intentar importar el módulo
     const module = await import(`./${moduleName}`);
-    if (module.run && typeof module.run === 'function') {
-      return await module.run(sock, m, args);
+    
+    // Verificar que el módulo tenga la función run
+    if (!module.run || typeof module.run !== 'function') {
+      throw new Error(`El módulo ${moduleName} no exporta una función run válida`);
     }
-    throw new Error(`Módulo ${moduleName} no disponible`);
-  } catch (error) {
-    logger.error(`Error cargando ${moduleName}:`, error);
-    const chatId = m.key.remoteJid;
-    await sock.sendMessage(chatId, {
-      text: `❌ Módulo ${moduleName} no disponible. Contacta al administrador.`
-    }, { quoted: m });
+    
+    // Verificar que el módulo tenga los comandos necesarios
+    if (!module.command || !Array.isArray(module.command)) {
+      logger.warning(`El módulo ${moduleName} no tiene comandos definidos`);
+    }
+    
+    logger.success(`Ejecutando comando ${args.command} en módulo ${moduleName}`);
+    
+    // Ejecutar la función run del módulo
+    return await module.run(sock, m, args);
+    
+  } catch (importError) {
+    logger.error(`Error importando ${moduleName}:`, importError);
+    
+    // Intentar dar una respuesta más útil al usuario
+    let errorMessage = `❌ No se pudo cargar el módulo ${moduleName}\n\n`;
+    
+    if (importError.code === 'MODULE_NOT_FOUND') {
+      errorMessage += `📁 *Archivo no encontrado*: ${moduleName}\n`;
+      errorMessage += `💡 *Solución*: El archivo del módulo no existe\n`;
+    } else if (importError.message.includes('no exporta una función run')) {
+      errorMessage += `⚙️ *Módulo mal configurado*: ${moduleName}\n`;
+      errorMessage += `💡 *Solución*: El módulo necesita exportar una función run\n`;
+    } else {
+      errorMessage += `🔧 *Error desconocido*: ${importError.message}\n`;
+      errorMessage += `💡 *Solución*: Contacta al administrador\n`;
+    }
+    
+    errorMessage += `\n📋 *Comandos disponibles en este módulo:*`;
+    errorMessage += `\n• Usa \`.menu\` para ver todos los comandos`;
+    
+    await sock.sendMessage(chatId, { text: errorMessage }, { quoted: m });
   }
 }
 
@@ -147,5 +179,13 @@ export {
   logger
 };
 
-// Cargar personajes al iniciar
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Cargar personajes
+    await loadCharacters();
+    logger.success('Sistema waifu minimal inicializado correctamente');
+  } catch (error) {
+    logger.error('Error inicializando sistema waifu minimal:', error);
+  }
+})();

@@ -170,8 +170,22 @@ async function showMinigameMenu(sock, m, userId) {
   const chatId = m.key.remoteJid;
   
   try {
-    const dailyGames = await getDailyGamesCount(userId);
-    const userStats = await getUserGameStats(userId);
+    // Obtener datos con manejo de errores seguro
+    let dailyGames, userStats;
+    
+    try {
+      dailyGames = await getDailyGamesCount(userId);
+    } catch (error) {
+      gamesLogger.error('Error obteniendo juegos diarios:', error);
+      dailyGames = { used: 0, max: CONFIG.dailyGames };
+    }
+    
+    try {
+      userStats = await getUserGameStats(userId);
+    } catch (error) {
+      gamesLogger.error('Error obteniendo estadísticas:', error);
+      userStats = { wins: 0, coins: 0 };
+    }
     
     let menuMessage = `🎮 *MENÚ DE MINIJUEGOS* 🎮\n\n`;
     menuMessage += `👤 *@${userId.split('@')[0]}*\n`;
@@ -181,12 +195,19 @@ async function showMinigameMenu(sock, m, userId) {
     
     menuMessage += `🎯 *Juegos Disponibles:*\n\n`;
     
-    Object.entries(GAME_DATABASE).forEach(([gameType, gameData]) => {
-      menuMessage += `${gameData.emoji} *${gameData.title}*\n`;
-      menuMessage += `📝 ${gameData.description}\n`;
-      menuMessage += `🎁 Recompensa: ${gameData.questions[0].reward.exp} EXP, ${gameData.questions[0].reward.coins} 💎\n`;
-      menuMessage += `💡 Comando: \`.${gameType.replace('_', '')}\`\n\n`;
-    });
+    // Verificar que GAME_DATABASE exista y tenga datos
+    if (GAME_DATABASE && Object.keys(GAME_DATABASE).length > 0) {
+      Object.entries(GAME_DATABASE).forEach(([gameType, gameData]) => {
+        if (gameData && gameData.questions && gameData.questions.length > 0) {
+          menuMessage += `${gameData.emoji} *${gameData.title}*\n`;
+          menuMessage += `📝 ${gameData.description}\n`;
+          menuMessage += `🎁 Recompensa: ${gameData.questions[0].reward.exp} EXP, ${gameData.questions[0].reward.coins} 💎\n`;
+          menuMessage += `💡 Comando: \`.${gameType.replace('_', '')}\`\n\n`;
+        }
+      });
+    } else {
+      menuMessage += `❌ *No hay juegos disponibles en este momento*\n\n`;
+    }
     
     menuMessage += `📋 *Cómo jugar:*\n`;
     menuMessage += `• Elige un juego de la lista\n`;
@@ -204,8 +225,9 @@ async function showMinigameMenu(sock, m, userId) {
     
   } catch (error) {
     gamesLogger.error('Error al mostrar menú de minijuegos:', error);
+    // Enviar mensaje de error simple pero informativo
     await sock.sendMessage(chatId, {
-      text: '❌ Error al cargar el menú de minijuegos.'
+      text: '❌ Error al cargar el menú de minijuegos.\n\n💡 *Intenta recargar el bot con .reload*'
     }, { quoted: m });
   }
 }
@@ -771,8 +793,17 @@ export const command = ['.minijuego', '.adivina', '.quiz', '.trivia', '.respuest
 export const alias = ['.minigame', '.guess', '.quiz_game', '.answer', '.hint', '.game_stats'];
 export const description = 'Sistema de minijuegos interactivos con recompensas';
 
-// Inicializar sistema
-initializeGameTables();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeGameTables();
+    // Cargar personajes
+    await loadCharacters();
+    gamesLogger.success('Sistema de minijuegos inicializado correctamente');
+  } catch (error) {
+    gamesLogger.error('Error inicializando sistema de minijuegos:', error);
+  }
+})();
 
 export { CONFIG, gamesLogger, GAME_TYPES, GAME_DATABASE };

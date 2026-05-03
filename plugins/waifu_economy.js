@@ -1277,8 +1277,17 @@ export const command = ['.mercado', '.vender_mercado', '.comprar_mercado', '.sub
 export const alias = ['.market', '.sell_market', '.buy_market', '.auction', '.create_auction', '.bid', '.investments', '.invest', '.casino_games', '.play_casino', '.economy_stats'];
 export const description = 'Sistema económico avanzado con mercado, subastas, inversiones y casino';
 
-// Inicializar sistema
-initializeEconomyTables();
-loadCharacters();
+// Inicializar sistema al iniciar
+(async () => {
+  try {
+    // Asegurar que las tablas existan
+    await initializeEconomyTables();
+    // Cargar personajes
+    await loadCharacters();
+    economyLogger.success('Sistema económico waifu inicializado correctamente');
+  } catch (error) {
+    economyLogger.error('Error inicializando sistema económico waifu:', error);
+  }
+})();
 
 export { CONFIG, economyLogger, TRANSACTION_TYPES, CASINO_GAMES };

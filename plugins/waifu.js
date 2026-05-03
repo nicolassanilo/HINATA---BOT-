@@ -219,8 +219,7 @@ async function showWaifus(sock, m, text) {
       
       message += `${globalIndex}. ${emoji} ${character.name}\n`;
       message += `   📺 ${character.anime}\n`;
-      message += `   💎 ${rarity} - ${character.price.toLocaleString()} pts\n`;
-      message += `   📝 ${character.description.substring(0, 50)}...\n\n`;
+      message += `   💎 ${rarity} - ${character.price.toLocaleString()} pts\n\n`;
     });
     
     message += `💡 *Comandos:*\n`;
@@ -639,8 +638,10 @@ async function initializeTables() {
 }
 
 // Inicializar sistema
-initializeTables();
-loadCharacters();
+(async () => {
+  await initializeTables();
+  await loadCharacters();
+})();
 
 // Exportar funciones para compatibilidad
 export { 
