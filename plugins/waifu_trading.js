@@ -7,14 +7,18 @@
 
 import { db } from './db.js';
 import { 
+  characters, 
+  loadCharacters, 
   getCharacterById, 
   getCharacterByName,
   getUserWaifus,
   validateUserWaifu,
   getRarezaEmoji,
   getRarezaTexto,
+  getUserBalance,
+  updateUserBalance,
   logger
-} from './waifu.js';
+} from './waifu_core.js';
 
 // Variables globales
 let activeTrades = new Map();

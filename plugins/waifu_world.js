@@ -17,11 +17,9 @@ import {
   getRarezaEmoji,
   logger,
   getUserBalance,
+  updateUserBalance,
   getUserWaifus,
-  validateUserWaifu,
-  formatNumber,
-  getRandomInt,
-  calculateChance
+  validateUserWaifu
 } from './waifu_core.js';
 
 // Sistema de configuración

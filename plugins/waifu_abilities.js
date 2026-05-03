@@ -13,8 +13,14 @@ import {
   characters, 
   loadCharacters, 
   getWaifuLevel, 
+  addWaifuExp, 
   getWaifuStats,
   getRarezaEmoji,
+  getRarezaBonus,
+  getUserBalance,
+  updateUserBalance,
+  getUserWaifus,
+  validateUserWaifu,
   logger
 } from './waifu_core.js';
 

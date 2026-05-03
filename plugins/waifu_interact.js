@@ -16,7 +16,12 @@ import {
   addWaifuExp, 
   getWaifuStats,
   getRarezaEmoji,
-  getRarezaBonus
+  getRarezaBonus,
+  getUserBalance,
+  updateUserBalance,
+  getUserWaifus,
+  validateUserWaifu,
+  logger
 } from './waifu_core.js';
 
 // Sistema de configuración
