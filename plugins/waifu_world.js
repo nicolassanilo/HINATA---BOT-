@@ -15,7 +15,13 @@ import {
   getWaifuLevel, 
   getWaifuStats,
   getRarezaEmoji,
-  logger
+  logger,
+  getUserBalance,
+  getUserWaifus,
+  validateUserWaifu,
+  formatNumber,
+  getRandomInt,
+  calculateChance
 } from './waifu_core.js';
 
 // Sistema de configuración
@@ -29,13 +35,8 @@ const CONFIG = {
   maxPartySize: 4
 };
 
-// Sistema de logging
-const worldLogger = {
-  info: (message) => CONFIG.enableLogging && console.log(`[WORLD] ℹ️ ${message}`),
-  success: (message) => CONFIG.enableLogging && console.log(`[WORLD] ✅ ${message}`),
-  warning: (message) => CONFIG.enableLogging && console.warn(`[WORLD] ⚠️ ${message}`),
-  error: (message) => CONFIG.enableLogging && console.error(`[WORLD] ❌ ${message}`)
-};
+// Usar el logger centralizado
+const worldLogger = logger;
 
 // Tipos de lugares
 const LOCATION_TYPES = {
@@ -331,7 +332,7 @@ async function exploreLocation(sock, m, userId, text) {
   if (!locationType) {
     return await sock.sendMessage(chatId, {
       text: '❌ Debes especificar un lugar.\n\n' +
-            '💡 *Uso:* `.explorar <lugar>\n` +
+            '💡 *Uso:* `.explorar <lugar>`\n' +
             '*Lugares:* ' + Object.keys(LOCATION_DEFINITIONS).join(', ')
     }, { quoted: m });
   }
@@ -433,7 +434,7 @@ async function travelToLocation(sock, m, userId, text) {
   if (!locationType) {
     return await sock.sendMessage(chatId, {
       text: '❌ Debes especificar un lugar.\n\n' +
-            '💡 *Uso:* `.viajar <lugar>\n` +
+            '💡 *Uso:* `.viajar <lugar>`\n' +
             '*Lugares:* ' + Object.keys(LOCATION_DEFINITIONS).join(', ')
     }, { quoted: m });
   }
@@ -605,8 +606,8 @@ async function acceptMission(sock, m, userId, text) {
   if (!missionId) {
     return await sock.sendMessage(chatId, {
       text: '❌ Debes especificar el ID de la misión.\n\n' +
-            '💡 *Uso:* `.aceptar_mision <id_mision>\n` +
-            '*Ejemplo:* `.aceptar_mision forest_explorer`'
+            '💡 *Uso:* `.aceptar_mision <id_mision>`\n' +
+            '*Misiones disponibles:* ' + Object.keys(MISSION_DEFINITIONS).map(m => `${m.id} - ${m.name}`).join(', ')
     }, { quoted: m });
   }
   
@@ -1166,10 +1167,52 @@ async function initializeWorldTables() {
   }
 }
 
+// Funciones auxiliares
+async function getUserWorldStats(userId) {
+  try {
+    const stats = await db.get(
+      'SELECT * FROM user_world_stats WHERE user_id = ?',
+      [userId]
+    );
+    return stats || {
+      explorationLevel: 1,
+      explorationPoints: 0,
+      currentLocation: LOCATION_TYPES.CITY,
+      locationsUnlocked: JSON.stringify([LOCATION_TYPES.CITY]),
+      lastExploration: null
+    };
+  } catch (error) {
+    worldLogger.error('Error obteniendo estadísticas del mundo:', error);
+    return {
+      explorationLevel: 1,
+      explorationPoints: 0,
+      currentLocation: LOCATION_TYPES.CITY,
+      locationsUnlocked: JSON.stringify([LOCATION_TYPES.CITY]),
+      lastExploration: null
+    };
+  }
+}
+
+async function getUnlockedLocations(userId) {
+  const stats = await getUserWorldStats(userId);
+  return JSON.parse(stats.locationsUnlocked || '[]');
+}
+
+function canUnlockLocation(userId, locationType) {
+  // Lógica simple para desbloquear lugares
+  return true; // Temporalmente todos los lugares son desbloqueables
+}
+
 // Exportar configuración y funciones necesarias
-export const command = ['.mundo', '.explorar', '.viajar', '.lugares', '.misiones', '.aceptar_mision', '.progreso_mision', '.mazmorra', '.mapa'];
-export const alias = ['.world', '.explore', '.travel', '.locations', '.missions', '.accept_mission', '.mission_progress', '.dungeon', '.personal_map'];
-export const description = 'Sistema de mundo interactivo, lugares, misiones y exploración';
+export const command = [
+  '.mundo', '.explorar', '.viajar', '.lugares', '.misiones', '.aceptar_mision',
+  '.progreso_mision', '.mazmorra', '.mapa'
+];
+export const alias = [
+  '.world', '.explore', '.travel', '.locations', '.missions', '.accept_mission',
+  '.mission_progress', '.dungeon', '.personal_map'
+];
+export const description = 'Sistema de mundo y exploración';
 
 // Inicializar sistema
 initializeWorldTables();

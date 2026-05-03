@@ -61,9 +61,10 @@ export async function run(sock, m, { text, command }) {
       case '.coleccion':
       case '.waifuinfo':
       case '.claim':
-        // Redirigir al módulo de colección
-        logger.info(`Redirigiendo comando ${command} al módulo de colección`);
-        return await redirectCommand('waifu_collection.js', sock, m, { text, command });
+        // Redirigir al módulo de colección básico (waifu.js)
+        logger.info(`Redirigiendo comando ${command} al módulo básico de waifu`);
+        const waifuModule = await import('./waifu.js');
+        return await waifuModule.run(sock, m, { text, command });
         
       case '.interact':
       case '.interactuar':
@@ -268,8 +269,12 @@ export async function run(sock, m, { text, command }) {
  */
 async function redirectCommand(moduleName, sock, m, args) {
   try {
+    logger.info(`Intentando cargar módulo: ${moduleName}`);
+    
     // Importar dinámicamente el módulo
     const module = await import(`./${moduleName}`);
+    
+    logger.info(`Módulo ${moduleName} cargado exitosamente`);
     
     // Ejecutar la función run del módulo
     if (module.run && typeof module.run === 'function') {
@@ -281,9 +286,17 @@ async function redirectCommand(moduleName, sock, m, args) {
     logger.error(`Error al redirigir al módulo ${moduleName}:`, error);
     
     const chatId = m.key.remoteJid;
-    await sock.sendMessage(chatId, {
-      text: `❌ Error al cargar el módulo ${moduleName}. Contacta al administrador.`
-    }, { quoted: m });
+    
+    // Si el módulo no existe, mostrar mensaje amigable
+    if (error.code === 'MODULE_NOT_FOUND' || error.message.includes('Cannot find module')) {
+      await sock.sendMessage(chatId, {
+        text: `🚧 *Módulo en desarrollo*\n\n❌ El módulo ${moduleName} aún no está disponible.\n\n💡 Este módulo estará disponible en futuras actualizaciones.\n\n📋 *Módulos disponibles:*\n• waifu_collection.js - Colección básica\n• waifu_trading.js - Sistema de intercambio`
+      }, { quoted: m });
+    } else {
+      await sock.sendMessage(chatId, {
+        text: `❌ Error al cargar el módulo ${moduleName}. Contacta al administrador.\n\n🔍 Error: ${error.message}`
+      }, { quoted: m });
+    }
   }
 }
 

@@ -91,14 +91,14 @@ function updateCharactersCache() {
 
 export function getCharacterById(id) {
   if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
-    loadCharacters();
+    loadCharacters().catch(err => logger.error('Error recargando cache:', err));
   }
   return charactersCache.get(id);
 }
 
 export function getCharacterByName(name) {
   if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
-    loadCharacters();
+    loadCharacters().catch(err => logger.error('Error recargando cache:', err));
   }
   return charactersCache.get(name.toLowerCase());
 }
@@ -373,12 +373,18 @@ export function calculateChance(percentage) {
 
 export async function sendWaifuImage(sock, chatId, character, caption, mentions = []) {
   try {
-    const imageUrl = character.image_url[getRandomInt(0, character.image_url.length - 1)];
-    await sock.sendMessage(chatId, {
-      image: { url: imageUrl },
-      caption,
-      mentions
-    });
+    // Verificar si el personaje tiene imágenes
+    if (character.image_url && character.image_url.length > 0) {
+      const imageUrl = character.image_url[getRandomInt(0, character.image_url.length - 1)];
+      await sock.sendMessage(chatId, {
+        image: { url: imageUrl },
+        caption,
+        mentions
+      });
+    } else {
+      // Si no hay imágenes, enviar solo el texto
+      await sock.sendMessage(chatId, { text: caption, mentions });
+    }
   } catch (error) {
     logger.error('Error al enviar imagen de waifu:', error);
     await sock.sendMessage(chatId, { text: caption, mentions });
