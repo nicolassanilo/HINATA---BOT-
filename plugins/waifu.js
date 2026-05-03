@@ -6,13 +6,19 @@
  */
 
 import { db } from './db.js';
-import fs from 'fs/promises';
 
-// Variables globales
-let characters = [];
-let charactersCache = new Map();
-let lastCacheUpdate = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+// Importar funciones compartidas desde el core
+import { 
+  characters, 
+  loadCharacters, 
+  getCharacterById, 
+  getCharacterByName,
+  getWaifuLevel,
+  getWaifuStats,
+  getRarezaEmoji,
+  getRarezaTexto,
+  logger
+} from './waifu_core.js';
 
 // Configuración básica
 const CONFIG = {
@@ -22,131 +28,13 @@ const CONFIG = {
   maxDailyPurchases: 10
 };
 
-// Sistema de logging
-const logger = {
-  info: (message) => CONFIG.enableLogging && console.log(`[WAIFU] ℹ️ ${message}`),
-  success: (message) => CONFIG.enableLogging && console.log(`[WAIFU] ✅ ${message}`),
-  warning: (message) => CONFIG.enableLogging && console.warn(`[WAIFU] ⚠️ ${message}`),
-  error: (message) => CONFIG.enableLogging && console.error(`[WAIFU] ❌ ${message}`)
-};
-
-// Cargar personajes desde el archivo JSON
-async function loadCharacters() {
-  try {
-    const data = await fs.readFile('./characters.json', 'utf8');
-    characters = JSON.parse(data);
-    updateCharactersCache();
-    lastCacheUpdate = Date.now();
-    logger.success(`${characters.length} personajes cargados correctamente`);
-  } catch (error) {
-    logger.error('Error al cargar characters.json:', error);
-    characters = [];
-  }
-}
-
-function updateCharactersCache() {
-  charactersCache.clear();
-  characters.forEach(char => {
-    charactersCache.set(char.id, char);
-    charactersCache.set(char.name.toLowerCase(), char);
-  });
-}
-
-function getCharacterById(id) {
-  if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
-    loadCharacters();
-  }
-  return charactersCache.get(id);
-}
-
-function getCharacterByName(name) {
-  if (Date.now() - lastCacheUpdate > CACHE_DURATION) {
-    loadCharacters();
-  }
-  return charactersCache.get(name.toLowerCase());
-}
-
-// Funciones de rareza
-function getRarezaEmoji(price) {
-  if (price >= 100000) return '👑';
-  if (price >= 50000) return '💠';
-  if (price >= 30000) return '💎';
-  if (price >= 20000) return '🔥';
-  if (price >= 15000) return '⚡';
-  if (price >= 10000) return '🌟';
-  if (price >= 5000) return '✨';
-  if (price >= 2000) return '🟢';
-  return '⚪';
-}
-
-function getRarezaTexto(price) {
-  if (price >= 100000) return 'Mítico';
-  if (price >= 50000) return 'Legendario';
-  if (price >= 30000) return 'Épico Legendario';
-  if (price >= 20000) return 'Épico';
-  if (price >= 15000) return 'Super Raro';
-  if (price >= 10000) return 'Raro';
-  if (price >= 5000) return 'Poco Común';
-  if (price >= 2000) return 'Común Plus';
-  return 'Común';
-}
-
-// Funciones de usuario
-async function getUserBalance(userId) {
-  try {
-    const user = await db.get('SELECT saldo, banco FROM usuarios WHERE chatId = ?', [userId]);
-    if (!user) {
-      await db.run('INSERT INTO usuarios (chatId, saldo, banco) VALUES (?, 100, 0)', [userId]);
-      return { saldo: 100, banco: 0, total: 100 };
-    }
-    return {
-      saldo: user.saldo || 0,
-      banco: user.banco || 0,
-      total: (user.saldo || 0) + (user.banco || 0)
-    };
-  } catch (error) {
-    logger.error('Error al obtener saldo:', error);
-    return { saldo: 0, banco: 0, total: 0 };
-  }
-}
-
-async function updateUserBalance(userId, newBalance) {
-  try {
-    await db.run('UPDATE usuarios SET saldo = ? WHERE chatId = ?', [newBalance, userId]);
-    return true;
-  } catch (error) {
-    logger.error('Error al actualizar saldo:', error);
-    return false;
-  }
-}
-
-async function getUserWaifus(userId) {
-  try {
-    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
-    const claimedIds = claimed.map(c => c.character_id);
-    return characters.filter(c => claimedIds.includes(c.id));
-  } catch (error) {
-    logger.error('Error al obtener waifus de usuario:', error);
-    return [];
-  }
-}
-
-async function validateUserWaifu(userId, waifuName) {
-  try {
-    const claimed = await db.all('SELECT character_id FROM claimed_characters WHERE user_id = ?', [userId]);
-    const claimedIds = claimed.map(c => c.character_id);
-    
-    const character = characters.find(c => 
-      claimedIds.includes(c.id) && 
-      c.name.toLowerCase().includes(waifuName.toLowerCase())
-    );
-    
-    return character;
-  } catch (error) {
-    logger.error('Error al validar waifu de usuario:', error);
-    return null;
-  }
-}
+// Importar funciones de usuario desde el core
+import { 
+  getUserBalance,
+  updateUserBalance,
+  getUserWaifus,
+  validateUserWaifu
+} from './waifu_core.js';
 
 // Funciones principales
 export const command = ['.waifus', '.claim', '.mywaifus', '.waifuinfo', '.vender', '.coleccion'];

@@ -335,6 +335,25 @@ async function showTestHelp(sock, m) {
   await sock.sendMessage(chatId, { text: help }, { quoted: m });
 }
 
+// Función auxiliar para pruebas de base de datos
+async function getUserBalance(userId) {
+  try {
+    const user = await db.get('SELECT saldo, banco FROM usuarios WHERE chatId = ?', [userId]);
+    if (!user) {
+      await db.run('INSERT INTO usuarios (chatId, saldo, banco) VALUES (?, 100, 0)', [userId]);
+      return { saldo: 100, banco: 0, total: 100 };
+    }
+    return {
+      saldo: user.saldo || 0,
+      banco: user.banco || 0,
+      total: (user.saldo || 0) + (user.banco || 0)
+    };
+  } catch (error) {
+    testLogger.error('Error al obtener saldo de prueba:', error);
+    return { saldo: 0, banco: 0, total: 0 };
+  }
+}
+
 // Inicializar sistema
 testLogger.info('Sistema de pruebas waifu inicializado');
 
