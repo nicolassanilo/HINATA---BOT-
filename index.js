@@ -105,8 +105,10 @@ export async function cargarPlugins() {
     const pluginsDir = path.join(__dirname, 'plugins');
     try {
         const files = await fs.readdir(pluginsDir);
-        // Filtra los archivos .js y excluye db.js
-        const pluginFiles = files.filter(file => file.endsWith('.js') && file !== 'db.js');
+        // Solo carga plugins activos; los archivos con '_' son copias antiguas desactivadas.
+        const pluginFiles = files.filter(file =>
+          file.endsWith('.js') && file !== 'db.js' && !file.startsWith('_')
+        );
 
         console.log('🔌 Cargando plugins...');
         for (const file of pluginFiles) {
@@ -117,6 +119,7 @@ export async function cargarPlugins() {
                 const imported = await import(pluginPath);
                 const pluginDefinition = imported.default || imported;
                 const commands = pluginDefinition.command || pluginDefinition.commands || imported.command || imported.commands;
+                const aliases = pluginDefinition.alias || pluginDefinition.aliases || imported.alias || imported.aliases;
 
                 if (!commands) {
                     console.log(`⚠️ Plugin omitido: "${file}" no exporta un comando compatible.`);
@@ -132,7 +135,10 @@ export async function cargarPlugins() {
                     continue;
                 }
 
-                const commandList = Array.isArray(commands) ? commands : [commands];
+                const commandList = [
+                  ...(Array.isArray(commands) ? commands : [commands]),
+                  ...(aliases ? (Array.isArray(aliases) ? aliases : [aliases]) : [])
+                ];
                 for (const cmd of commandList) {
                     if (cmd instanceof RegExp) {
                         newRegexPlugins.push({ pattern: cmd, plugin: pluginObj, file });

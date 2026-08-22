@@ -39,7 +39,7 @@ export async function run(sock, m, { text, command }) {
 
   try {
     // Verificar si es admin
-    if (!await isAdmin(userId, chatId)) {
+    if (!await isAdmin(sock, userId, chatId)) {
       return await sock.sendMessage(chatId, {
         text: '❌ Este comando solo puede ser usado por administradores.'
       }, { quoted: m });
@@ -85,7 +85,7 @@ export async function run(sock, m, { text, command }) {
 }
 
 // Verificar si es admin
-async function isAdmin(userId, chatId) {
+async function isAdmin(sock, userId, chatId) {
   try {
     const groupMetadata = await sock.groupMetadata(chatId);
     return groupMetadata.participants.some(p => 
@@ -113,7 +113,7 @@ async function banUser(sock, m, text) {
   
   try {
     // Verificar si el bot es admin
-    const botIsAdmin = await isAdmin(sock.user.id, chatId);
+    const botIsAdmin = await isAdmin(sock, sock.user.id, chatId);
     if (!botIsAdmin) {
       return await sock.sendMessage(chatId, {
         text: '❌ El bot necesita ser administrador para banear usuarios.'
